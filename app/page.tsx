@@ -6,10 +6,13 @@ export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Simple check if user has profile
-    const hasProfile = localStorage.getItem('players') && 
-                       JSON.parse(localStorage.getItem('players') || '[]').length > 0;
-    setIsLoggedIn(hasProfile);
+    try {
+      const playersData = localStorage.getItem('players');
+      const hasProfile = playersData ? JSON.parse(playersData).length > 0 : false;
+      setIsLoggedIn(hasProfile);
+    } catch (e) {
+      setIsLoggedIn(false);
+    }
   }, []);
 
   const handleLogout = () => {

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 type Player = {
   id: string;
@@ -20,22 +20,45 @@ export default function MatchModal({ isOpen, onClose, players, onMatchRecorded }
   const [loserGames, setLoserGames] = useState(0);
   const [error, setError] = useState("");
 
+  // Reset form when opening
+  useEffect(() => {
+    if (isOpen) {
+      setWinnerId("");
+      setLoserId("");
+      setWinnerGames(0);
+      setLoserGames(0);
+      setError("");
+    }
+  }, [isOpen]);
+
   const handleSubmit = () => {
     if (!winnerId || !loserId) {
       setError("Please select both players");
       return;
     }
     if (winnerId === loserId) {
-      setError("You cannot play against yourself!");
+      setError("❌ You cannot play against yourself!");
       return;
     }
+
     if (winnerGames + loserGames !== 15) {
       setError("Total games must equal 15");
       return;
     }
 
+    // Check if they already played each other
+    const existingMatches = JSON.parse(localStorage.getItem('matches') || '[]');
+    const alreadyPlayed = existingMatches.some((m: any) => 
+      (m.winnerId === winnerId && m.loserId === loserId) || 
+      (m.winnerId === loserId && m.loserId === winnerId)
+    );
+
+    if (alreadyPlayed) {
+      setError("❌ These two players have already played each other");
+      return;
+    }
+
     onMatchRecorded(winnerId, loserId, winnerGames, loserGames);
-    alert(`✅ Match recorded: ${players.find(p => p.id === winnerId)?.name} ${winnerGames} - ${loserGames} ${players.find(p => p.id === loserId)?.name}`);
     
     setWinnerId("");
     setLoserId("");
@@ -50,7 +73,7 @@ export default function MatchModal({ isOpen, onClose, players, onMatchRecorded }
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-8 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6">Record New Match</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Record New Match</h2>
 
         <select 
           value={winnerId} 
@@ -102,7 +125,7 @@ export default function MatchModal({ isOpen, onClose, players, onMatchRecorded }
           </div>
         </div>
 
-        {error && <p className="text-red-600 mb-4 text-center">{error}</p>}
+        {error && <p className="text-red-600 mb-4 text-center font-medium">{error}</p>}
 
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 py-3 border rounded-lg">Cancel</button>

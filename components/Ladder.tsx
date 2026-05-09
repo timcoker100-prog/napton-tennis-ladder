@@ -16,38 +16,99 @@ type Player = {
   matchesPlayed: number;
 };
 
+type Match = {
+  id: string;
+  winnerId: string;
+  loserId: string;
+  winnerName: string;
+  loserName: string;
+  winnerGames: number;
+  loserGames: number;
+  date: string;
+};
+
 export default function Ladder() {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
 
-  const loadPlayers = () => {
+  const loadData = () => {
     try {
-      const saved = localStorage.getItem('players');
-      if (saved) {
-        setPlayers(JSON.parse(saved));
-      }
+      const savedPlayers = localStorage.getItem('players');
+      const savedMatches = localStorage.getItem('matches');
+      
+      if (savedPlayers) setPlayers(JSON.parse(savedPlayers));
+      if (savedMatches) setMatches(JSON.parse(savedMatches));
     } catch (e) {
       console.error(e);
     }
   };
 
   useEffect(() => {
-    loadPlayers();
+    loadData();
   }, []);
 
-  const handleProfileSaved = () => {
-    loadPlayers();
+  const handleProfileSaved = (newPlayer: Player) => {
+    setPlayers(prev => {
+      const existingIndex = prev.findIndex(p => p.email === newPlayer.email);
+      if (existingIndex !== -1) {
+        // Update existing player
+        const updated = [...prev];
+        updated[existingIndex] = { ...updated[existingIndex], ...newPlayer };
+        localStorage.setItem('players', JSON.stringify(updated));
+        return updated;
+      } else {
+        // Add new player
+        const updated = [...prev, newPlayer];
+        localStorage.setItem('players', JSON.stringify(updated));
+        return updated;
+      }
+    });
     setShowProfileModal(false);
   };
 
   const recordMatch = (winnerId: string, loserId: string, winnerGames: number, loserGames: number) => {
+    const winner = players.find(p => p.id === winnerId);
+    const loser = players.find(p => p.id === loserId);
+
+    if (!winner || !loser) return;
+
+    const newMatch: Match = {
+      id: Date.now().toString(),
+      winnerId,
+      loserId,
+      winnerName: winner.name,
+      loserName: loser.name,
+      winnerGames,
+      loserGames,
+      date: new Date().toLocaleDateString()
+    };
+
+    // Save match
+    const updatedMatches = [newMatch, ...matches];
+    setMatches(updatedMatches);
+    localStorage.setItem('matches', JSON.stringify(updatedMatches));
+
+    // Update players
     setPlayers(prev => prev.map(player => {
       if (player.id === winnerId) {
-        return { ...player, points: player.points + winnerGames, gamesWon: player.gamesWon + winnerGames, gamesLost: player.gamesLost + loserGames, matchesPlayed: player.matchesPlayed + 1 };
+        return {
+          ...player,
+          points: player.points + winnerGames,
+          gamesWon: player.gamesWon + winnerGames,
+          gamesLost: player.gamesLost + loserGames,
+          matchesPlayed: player.matchesPlayed + 1
+        };
       }
       if (player.id === loserId) {
-        return { ...player, points: player.points + loserGames, gamesWon: player.gamesWon + loserGames, gamesLost: player.gamesLost + winnerGames, matchesPlayed: player.matchesPlayed + 1 };
+        return {
+          ...player,
+          points: player.points + loserGames,
+          gamesWon: player.gamesWon + loserGames,
+          gamesLost: player.gamesLost + winnerGames,
+          matchesPlayed: player.matchesPlayed + 1
+        };
       }
       return player;
     }));
@@ -60,29 +121,14 @@ export default function Ladder() {
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-3xl font-bold text-emerald-700">Current Ladder</h2>
         <div className="flex gap-3">
-          <button 
-            onClick={loadPlayers}
-            className="px-5 py-3 border border-gray-400 rounded-full hover:bg-gray-100 text-sm"
-          >
-            🔄 Refresh
-          </button>
-          <button 
-            onClick={() => setShowProfileModal(true)}
-            className="px-6 py-3 border border-emerald-600 text-emerald-700 rounded-full hover:bg-emerald-50 font-medium"
-          >
-            My Profile
-          </button>
-          <button 
-            onClick={() => setShowMatchModal(true)}
-            className="px-6 py-3 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 font-medium flex items-center gap-2"
-          >
-            + Record Match
-          </button>
+          <button onClick={loadData} className="px-5 py-3 border rounded-full hover:bg-gray-100">🔄 Refresh</button>
+          <button onClick={() => setShowProfileModal(true)} className="px-6 py-3 border border-emerald-600 text-emerald-700 rounded-full hover:bg-emerald-50 font-medium">My Profile</button>
+          <button onClick={() => setShowMatchModal(true)} className="px-6 py-3 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 font-medium">+ Record Match</button>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl shadow overflow-hidden">
+      {/* Ladder Table */}
+      <div className="bg-white rounded-2xl shadow overflow-hidden mb-12">
         <table className="w-full">
           <thead className="bg-emerald-700 text-white">
             <tr>
@@ -112,7 +158,7 @@ export default function Ladder() {
                   {player.contactConsent && (
                     <div className="flex gap-4 text-2xl justify-center">
                       {player.email && <a href={`mailto:${player.email}`} title="Email">✉️</a>}
-                      {player.whatsapp && <a href={`https://wa.me/${player.whatsapp}`} target="_blank" title="WhatsApp">💬</a>}
+                      {player.whatsapp && <a href={`https://wa.me/${player.whatsapp.replace(/\D/g,'')}`} target="_blank" title="WhatsApp">💬</a>}
                       {player.phone && <a href={`tel:${player.phone}`} title="Call">📞</a>}
                     </div>
                   )}
@@ -123,17 +169,31 @@ export default function Ladder() {
         </table>
       </div>
 
-      <ProfileModal 
-        isOpen={showProfileModal} 
-        onClose={() => setShowProfileModal(false)} 
-        onSaved={handleProfileSaved} 
-      />
-      <MatchModal 
-        isOpen={showMatchModal} 
-        onClose={() => setShowMatchModal(false)} 
-        players={players} 
-        onMatchRecorded={recordMatch} 
-      />
+      {/* Match History */}
+      <h2 className="text-2xl font-bold mb-4">Recent Matches</h2>
+      <div className="bg-white rounded-2xl shadow overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-4 text-left">Date</th>
+              <th className="p-4 text-left">Match</th>
+              <th className="p-4 text-left">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            {matches.slice(0, 10).map(m => (
+              <tr key={m.id} className="border-t">
+                <td className="p-4">{m.date}</td>
+                <td className="p-4 font-medium">{m.winnerName} beat {m.loserName}</td>
+                <td className="p-4">{m.winnerGames} - {m.loserGames}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} onSaved={handleProfileSaved} />
+      <MatchModal isOpen={showMatchModal} onClose={() => setShowMatchModal(false)} players={players} onMatchRecorded={recordMatch} />
     </div>
   );
 }

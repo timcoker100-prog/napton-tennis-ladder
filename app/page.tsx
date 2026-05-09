@@ -1,20 +1,34 @@
 'use client';
-import Ladder from '../components/Ladder';
 import { useState, useEffect } from 'react';
+import Ladder from '../components/Ladder';
 
 export default function Home() {
-  const [showLogout, setShowLogout] = useState(true); // Always show for now
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  useEffect(() => {
+    const user = localStorage.getItem('currentUser');
+    if (user) {
+      setCurrentUser(JSON.parse(user));
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const handleLogout = () => {
-    if (confirm("Logout from the ladder?")) {
-      localStorage.clear();
-      window.location.reload();
-    }
+    localStorage.removeItem('currentUser');
+    setIsLoggedIn(false);
+    setCurrentUser(null);
   };
+
+  if (!isLoggedIn) {
+    return <Ladder onLoginSuccess={(user: any) => {
+      setCurrentUser(user);
+      setIsLoggedIn(true);
+    }} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-emerald-700 text-white py-5 shadow-lg">
         <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
           <div className="flex items-center gap-4">
@@ -26,16 +40,11 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-4">
-            <a 
-              href="/admin" 
-              className="px-6 py-2.5 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition"
-            >
-              Admin
-            </a>
-
+            <span className="text-sm">Welcome, {currentUser?.name}</span>
+            <a href="/admin" className="px-5 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm">Admin</a>
             <button
               onClick={handleLogout}
-              className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition shadow-md"
+              className="px-6 py-2.5 bg-red-600 hover:bg-red-700 rounded-lg font-medium"
             >
               Logout
             </button>
@@ -43,9 +52,7 @@ export default function Home() {
         </div>
       </header>
 
-      <main>
-        <Ladder />
-      </main>
+      <Ladder />
     </div>
   );
 }

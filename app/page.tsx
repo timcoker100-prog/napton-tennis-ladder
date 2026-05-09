@@ -16,7 +16,7 @@ export default function Home() {
   }, []);
 
   const handleLogout = () => {
-    if (confirm("Logout and clear your session?")) {
+    if (confirm("Logout from the ladder?")) {
       localStorage.clear();
       window.location.reload();
     }
@@ -25,31 +25,32 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-emerald-700 text-white py-4 shadow">
+      <header className="bg-emerald-700 text-white py-5 shadow-lg">
         <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <div className="text-3xl">🎾</div>
+            <div className="text-4xl">🎾</div>
             <div>
-              <h1 className="text-2xl font-bold">Napton Tennis Club</h1>
-              <p className="text-emerald-100 text-sm">Singles Ladder</p>
+              <h1 className="text-3xl font-bold">Napton Tennis Club</h1>
+              <p className="text-emerald-100">Singles Ladder</p>
             </div>
           </div>
 
           <div className="flex items-center gap-4">
+            <a 
+              href="/admin" 
+              className="px-6 py-2.5 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition"
+            >
+              Admin
+            </a>
+
             {isLoggedIn && (
               <button
                 onClick={handleLogout}
-                className="bg-white/20 hover:bg-white/30 px-5 py-2 rounded-lg text-sm font-medium transition"
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition shadow-md"
               >
                 Logout
               </button>
             )}
-            <a 
-              href="/admin" 
-              className="text-sm bg-white/20 hover:bg-white/30 px-5 py-2 rounded-lg transition"
-            >
-              Admin
-            </a>
           </div>
         </div>
       </header>

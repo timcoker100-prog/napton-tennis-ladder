@@ -1,126 +1,117 @@
 'use client';
+import { useState } from 'react';
 
-import { useState } from "react";
+const SECRET_CODE = "NAPTON2026";   // ← CHANGE THIS to your private club code
 
-type ProfileModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  onSaved: () => void;
-};
-
-export default function ProfileModal({ isOpen, onClose, onSaved }: ProfileModalProps) {
-  const [form, setForm] = useState({
-    name: "Your Name",
-    email: "your@email.com",
-    phone: "+441234567890",
-    whatsapp: "+441234567890",
-    contactConsent: true,
-  });
-
+export default function ProfileModal({ isOpen, onClose, onSaved }: any) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [contactConsent, setContactConsent] = useState(false);
+  const [secretCode, setSecretCode] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  const handleSubmit = () => {
+    if (secretCode !== SECRET_CODE) {
+      setError("❌ Incorrect club code. Ask the admin for the code.");
+      return;
+    }
+    if (!name.trim() || !email.trim()) {
+      setError("Name and email are required");
+      return;
+    }
 
-    // Basic validation
-    if (!form.name.trim()) return setError("Name is required");
-    if (!form.email.includes("@")) return setError("Please enter a valid email");
+    const newPlayer = {
+      id: Date.now().toString(),
+      name: name.trim(),
+      email: email.trim(),
+      phone,
+      whatsapp,
+      contactConsent,
+      points: 1000,
+      gamesWon: 0,
+      gamesLost: 0,
+      matchesPlayed: 0
+    };
 
-    alert(`✅ Profile Saved!\n\nName: ${form.name}\nEmail: ${form.email}\nPhone: ${form.phone}\nWhatsApp: ${form.whatsapp}`);
-    
+    const existing = JSON.parse(localStorage.getItem('players') || '[]');
+    localStorage.setItem('players', JSON.stringify([...existing, newPlayer]));
+
+    alert("✅ Profile created successfully! Welcome to the Napton Tennis Ladder.");
     onSaved();
     onClose();
-  };
-
-  // Allow only numbers + +
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>, field: 'phone' | 'whatsapp') => {
-    const value = e.target.value.replace(/[^0-9+]/g, '');
-    setForm({ ...form, [field]: value });
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-8 w-full max-w-md">
-        <h2 className="text-2xl font-bold mb-6">My Profile - Napton Tennis Club</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Join Napton Tennis Ladder</h2>
+        
+        <input 
+          type="text" 
+          placeholder="Full Name *" 
+          value={name} 
+          onChange={(e) => setName(e.target.value)} 
+          className="w-full p-3 border rounded-lg mb-3" 
+        />
+        <input 
+          type="email" 
+          placeholder="Email Address *" 
+          value={email} 
+          onChange={(e) => setEmail(e.target.value)} 
+          className="w-full p-3 border rounded-lg mb-3" 
+        />
+        <input 
+          type="tel" 
+          placeholder="Phone Number" 
+          value={phone} 
+          onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))} 
+          className="w-full p-3 border rounded-lg mb-3" 
+        />
+        <input 
+          type="tel" 
+          placeholder="WhatsApp Number" 
+          value={whatsapp} 
+          onChange={(e) => setWhatsapp(e.target.value.replace(/\D/g, ''))} 
+          className="w-full p-3 border rounded-lg mb-3" 
+        />
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium mb-1">Full Name</label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full border rounded-lg px-4 py-3"
-              required
-            />
-          </div>
+        <input 
+          type="text" 
+          placeholder="Club Secret Code *" 
+          value={secretCode} 
+          onChange={(e) => setSecretCode(e.target.value.toUpperCase())} 
+          className="w-full p-3 border rounded-lg mb-4" 
+        />
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Email Address</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full border rounded-lg px-4 py-3"
-              required
-            />
-          </div>
+        <label className="flex items-center gap-2 mb-6 cursor-pointer">
+          <input 
+            type="checkbox" 
+            checked={contactConsent} 
+            onChange={(e) => setContactConsent(e.target.checked)} 
+          />
+          I agree to be contacted by other club members
+        </label>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Phone Number</label>
-            <input
-              type="tel"
-              value={form.phone}
-              onChange={(e) => handlePhoneChange(e, 'phone')}
-              className="w-full border rounded-lg px-4 py-3"
-              placeholder="+44 1234 567890"
-            />
-          </div>
+        {error && <p className="text-red-600 mb-4 text-center font-medium">{error}</p>}
 
-          <div>
-            <label className="block text-sm font-medium mb-1">WhatsApp Number</label>
-            <input
-              type="tel"
-              value={form.whatsapp}
-              onChange={(e) => handlePhoneChange(e, 'whatsapp')}
-              className="w-full border rounded-lg px-4 py-3"
-              placeholder="+44 1234 567890"
-            />
-          </div>
-
-          <div className="flex items-center gap-3 pt-2">
-            <input
-              type="checkbox"
-              checked={form.contactConsent}
-              onChange={(e) => setForm({ ...form, contactConsent: e.target.checked })}
-              className="w-5 h-5"
-            />
-            <label className="text-sm">
-              I am happy to be contacted by other club members via phone / WhatsApp
-            </label>
-          </div>
-
-          {error && <p className="text-red-600 text-sm font-medium">{error}</p>}
-
-          <div className="pt-6 flex gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-3 border border-gray-300 rounded-xl font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="flex-1 py-3 bg-emerald-700 text-white rounded-xl font-medium hover:bg-emerald-800"
-            >
-              Save Profile
-            </button>
-          </div>
-        </form>
+        <div className="flex gap-3">
+          <button 
+            onClick={onClose} 
+            className="flex-1 py-3 border rounded-lg hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium"
+          >
+            Join Ladder
+          </button>
+        </div>
       </div>
     </div>
   );

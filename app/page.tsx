@@ -3,17 +3,7 @@ import Ladder from '../components/Ladder';
 import { useState, useEffect } from 'react';
 
 export default function Home() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    try {
-      const playersData = localStorage.getItem('players');
-      const hasProfile = playersData ? JSON.parse(playersData).length > 0 : false;
-      setIsLoggedIn(hasProfile);
-    } catch (e) {
-      setIsLoggedIn(false);
-    }
-  }, []);
+  const [showLogout, setShowLogout] = useState(true); // Always show for now
 
   const handleLogout = () => {
     if (confirm("Logout from the ladder?")) {
@@ -43,14 +33,12 @@ export default function Home() {
               Admin
             </a>
 
-            {isLoggedIn && (
-              <button
-                onClick={handleLogout}
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition shadow-md"
-              >
-                Logout
-              </button>
-            )}
+            <button
+              onClick={handleLogout}
+              className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium text-sm transition shadow-md"
+            >
+              Logout
+            </button>
           </div>
         </div>
       </header>

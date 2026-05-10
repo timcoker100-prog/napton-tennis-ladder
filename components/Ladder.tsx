@@ -102,16 +102,7 @@ export default function Ladder({ onLoginSuccess }: LadderProps) {
 
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
 
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-emerald-700">Current Ladder</h2>
-        <div className="flex gap-3">
-          <button onClick={loadData} className="px-5 py-3 border rounded-full hover:bg-gray-100">🔄 Refresh</button>
-          <button onClick={() => setShowProfileModal(true)} className="px-6 py-3 border border-emerald-600 text-emerald-700 rounded-full hover:bg-emerald-50 font-medium">My Profile</button>
-          <button onClick={() => setShowMatchModal(true)} className="px-6 py-3 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 font-medium">+ Record Match</button>
-        </div>
-      </div>
+ notepad components\Ladder.tsx
 
       {/* Ladder Table */}
       <div className="bg-white rounded-2xl shadow overflow-hidden mb-12">

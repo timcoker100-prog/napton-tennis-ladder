@@ -7,12 +7,13 @@ export default function Home() {
 
   useEffect(() => {
     const user = localStorage.getItem('currentUser');
+    
     if (user) {
-      router.replace('/ladder');     // Go to ladder if logged in
+      router.replace('/ladder');
     } else {
-      router.replace('/login');      // Go to login if not logged in
+      router.replace('/login');
     }
   }, [router]);
 
-  return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  return <div className="min-h-screen flex items-center justify-center">Redirecting to login...</div>;
 }

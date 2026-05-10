@@ -52,8 +52,8 @@ export default function LoginPage() {
           Join Ladder
         </button>
 
-        <p className="text-center text-xs text-gray-400 mt-8">
-          Club members only • Ask admin for code
+               <p className="text-center text-[10px] text-gray-300 mt-8">
+          Club members only • Ask admin for the code
         </p>
       </div>
     </div>

@@ -40,36 +40,15 @@ export default function LoginPage() {
           <p className="text-gray-600 mt-2">Singles Ladder</p>
         </div>
 
-        <h2 className="text-2xl font-semibold text-center mb-8">Join the Ladder</h2>
+        <h2 className="text-2xl font-semibold text-center mb-8">Register / Login</h2>
 
-        <input
-          type="text"
-          placeholder="Full Name *"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full p-4 border rounded-2xl mb-4 text-lg"
-        />
-        <input
-          type="email"
-          placeholder="Email Address *"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-4 border rounded-2xl mb-6 text-lg"
-        />
-        <input
-          type="text"
-          placeholder="Club Secret Code *"
-          value={secretCode}
-          onChange={(e) => setSecretCode(e.target.value.toUpperCase())}
-          className="w-full p-4 border rounded-2xl mb-8 text-lg"
-        />
+        <input type="text" placeholder="Full Name *" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-4 border rounded-2xl mb-4 text-lg" />
+        <input type="email" placeholder="Email Address *" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-4 border rounded-2xl mb-6 text-lg" />
+        <input type="text" placeholder="Club Secret Code *" value={secretCode} onChange={(e) => setSecretCode(e.target.value.toUpperCase())} className="w-full p-4 border rounded-2xl mb-8 text-lg" />
 
         {error && <p className="text-red-600 text-center mb-6 font-medium">{error}</p>}
 
-        <button
-          onClick={handleSubmit}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-semibold text-xl"
-        >
+        <button onClick={handleSubmit} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-semibold text-xl">
           Join Ladder
         </button>
 

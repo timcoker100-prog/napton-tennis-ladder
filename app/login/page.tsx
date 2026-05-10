@@ -75,8 +75,8 @@ export default function LoginPage() {
           Join Ladder
         </button>
 
-        <p className="text-center text-sm text-gray-500 mt-8">
-          Club code: <strong>NAPTON2026</strong>
+                        <p className="text-center text-xs text-gray-400 mt-8">
+          Club members: Use code NAPTON2026
         </p>
       </div>
     </div>

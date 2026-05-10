@@ -13,7 +13,7 @@ export default function LoginPage() {
 
   const handleSubmit = () => {
     if (secretCode !== SECRET_CODE) {
-      setError("❌ Incorrect club code. Please ask the admin.");
+      setError("❌ Incorrect club code");
       return;
     }
     if (!name.trim() || !email.trim()) {
@@ -28,7 +28,7 @@ export default function LoginPage() {
     };
 
     localStorage.setItem('currentUser', JSON.stringify(user));
-    router.push('/ladder');   // Go to main ladder
+    router.push('/ladder');
   };
 
   return (
@@ -42,41 +42,18 @@ export default function LoginPage() {
 
         <h2 className="text-2xl font-semibold text-center mb-8">Join the Ladder</h2>
 
-        <input
-          type="text"
-          placeholder="Full Name *"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full p-4 border rounded-2xl mb-4 text-lg"
-        />
-
-        <input
-          type="email"
-          placeholder="Email Address *"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-4 border rounded-2xl mb-6 text-lg"
-        />
-
-        <input
-          type="text"
-          placeholder="Club Secret Code *"
-          value={secretCode}
-          onChange={(e) => setSecretCode(e.target.value.toUpperCase())}
-          className="w-full p-4 border rounded-2xl mb-8 text-lg"
-        />
+        <input type="text" placeholder="Full Name *" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-4 border rounded-2xl mb-4 text-lg" />
+        <input type="email" placeholder="Email Address *" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-4 border rounded-2xl mb-6 text-lg" />
+        <input type="text" placeholder="Club Secret Code *" value={secretCode} onChange={(e) => setSecretCode(e.target.value.toUpperCase())} className="w-full p-4 border rounded-2xl mb-8 text-lg" />
 
         {error && <p className="text-red-600 text-center mb-6 font-medium">{error}</p>}
 
-        <button
-          onClick={handleSubmit}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-semibold text-xl"
-        >
+        <button onClick={handleSubmit} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-semibold text-xl">
           Join Ladder
         </button>
 
-                        <p className="text-center text-xs text-gray-400 mt-8">
-          Club members: Use code NAPTON2026
+        <p className="text-center text-xs text-gray-400 mt-8">
+          Club members only • Ask admin for code
         </p>
       </div>
     </div>

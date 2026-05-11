@@ -44,8 +44,11 @@ export default function Ladder() {
     }
   };
 
+  // Auto-refresh every 5 seconds
   useEffect(() => {
     loadData();
+    const interval = setInterval(loadData, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleProfileSaved = (newPlayer: Player) => {
@@ -62,12 +65,9 @@ export default function Ladder() {
       return updated;
     });
     setShowProfileModal(false);
-    // Force refresh
-    setTimeout(loadData, 100);
   };
 
   const recordMatch = (winnerId: string, loserId: string, winnerGames: number, loserGames: number) => {
-    // ... (keep your existing recordMatch logic)
     const winner = players.find(p => p.id === winnerId);
     const loser = players.find(p => p.id === loserId);
     if (!winner || !loser) return;
@@ -88,24 +88,8 @@ export default function Ladder() {
     localStorage.setItem('matches', JSON.stringify(updatedMatches));
 
     setPlayers(prev => prev.map(player => {
-      if (player.id === winnerId) {
-        return { 
-          ...player, 
-          points: player.points + winnerGames, 
-          gamesWon: player.gamesWon + winnerGames, 
-          gamesLost: player.gamesLost + loserGames, 
-          matchesPlayed: player.matchesPlayed + 1 
-        };
-      }
-      if (player.id === loserId) {
-        return { 
-          ...player, 
-          points: player.points + loserGames, 
-          gamesWon: player.gamesWon + loserGames, 
-          gamesLost: player.gamesLost + winnerGames, 
-          matchesPlayed: player.matchesPlayed + 1 
-        };
-      }
+      if (player.id === winnerId) return { ...player, points: player.points + winnerGames, gamesWon: player.gamesWon + winnerGames, gamesLost: player.gamesLost + loserGames, matchesPlayed: player.matchesPlayed + 1 };
+      if (player.id === loserId) return { ...player, points: player.points + loserGames, gamesWon: player.gamesWon + loserGames, gamesLost: player.gamesLost + winnerGames, matchesPlayed: player.matchesPlayed + 1 };
       return player;
     }));
   };
@@ -126,7 +110,7 @@ export default function Ladder() {
         </div>
       </div>
 
-      {/* Rest of your table stays the same */}
+      {/* Ladder Table */}
       <div className="bg-white rounded-2xl shadow overflow-hidden mb-12">
         <table className="w-full">
           <thead className="bg-emerald-700 text-white">
@@ -166,6 +150,19 @@ export default function Ladder() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Recent Matches */}
+      <div className="bg-white rounded-2xl shadow p-6">
+        <h3 className="font-semibold text-lg mb-4">Recent Matches</h3>
+        <div className="space-y-2">
+          {matches.slice(0, 10).map(match => (
+            <div key={match.id} className="flex justify-between text-sm border-b pb-2">
+              <span>{match.date}</span>
+              <span>{match.winnerName} beat {match.loserName} ({match.winnerGames}-{match.loserGames})</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} onSaved={handleProfileSaved} />

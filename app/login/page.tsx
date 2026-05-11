@@ -23,26 +23,38 @@ export default function LoginPage() {
     }
 
     const trimmedEmail = email.trim().toLowerCase();
+    const playerName = name.trim() || "Unnamed Player";
 
-    if (isRegisterMode) {
-      const existing = JSON.parse(localStorage.getItem('players') || '[]');
-      if (existing.some((p: any) => p.email === trimmedEmail)) {
-        setError("❌ This email is already registered. Please use Login.");
-        return;
-      }
-      if (!name.trim()) {
-        setError("Name is required for registration");
-        return;
-      }
+    // Check for duplicate email
+    const existingPlayers = JSON.parse(localStorage.getItem('players') || '[]');
+    if (isRegisterMode && existingPlayers.some((p: any) => p.email === trimmedEmail)) {
+      setError("❌ This email is already registered. Please use Login.");
+      return;
     }
 
-    const user = {
+    const newPlayer = {
       id: Date.now().toString(),
-      name: name.trim() || "User",
+      name: playerName,
       email: trimmedEmail,
+      phone: "",
+      whatsapp: "",
+      contactConsent: true,
+      points: 0,
+      gamesWon: 0,
+      gamesLost: 0,
+      matchesPlayed: 0,
     };
 
-    localStorage.setItem('currentUser', JSON.stringify(user));
+    // Save to players list
+    const updatedPlayers = isRegisterMode 
+      ? [...existingPlayers, newPlayer] 
+      : existingPlayers.map((p: any) => p.email === trimmedEmail ? newPlayer : p);
+
+    localStorage.setItem('players', JSON.stringify(updatedPlayers));
+
+    // Save current user
+    localStorage.setItem('currentUser', JSON.stringify(newPlayer));
+
     router.push('/ladder');
   };
 
@@ -56,18 +68,8 @@ export default function LoginPage() {
         </div>
 
         <div className="flex gap-2 mb-8 bg-gray-100 p-1 rounded-2xl">
-          <button
-            onClick={() => setIsRegisterMode(true)}
-            className={`flex-1 py-3 rounded-xl font-medium ${isRegisterMode ? 'bg-white shadow' : 'text-gray-500'}`}
-          >
-            Register
-          </button>
-          <button
-            onClick={() => setIsRegisterMode(false)}
-            className={`flex-1 py-3 rounded-xl font-medium ${!isRegisterMode ? 'bg-white shadow' : 'text-gray-500'}`}
-          >
-            Login
-          </button>
+          <button onClick={() => setIsRegisterMode(true)} className={`flex-1 py-3 rounded-xl font-medium ${isRegisterMode ? 'bg-white shadow' : 'text-gray-500'}`}>Register</button>
+          <button onClick={() => setIsRegisterMode(false)} className={`flex-1 py-3 rounded-xl font-medium ${!isRegisterMode ? 'bg-white shadow' : 'text-gray-500'}`}>Login</button>
         </div>
 
         <h2 className="text-2xl font-semibold text-center mb-8">
@@ -75,37 +77,16 @@ export default function LoginPage() {
         </h2>
 
         {isRegisterMode && (
-          <input
-            type="text"
-            placeholder="Full Name *"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full p-4 border rounded-2xl mb-4 text-lg"
-          />
+          <input type="text" placeholder="Full Name *" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-4 border rounded-2xl mb-4 text-lg" />
         )}
 
-        <input
-          type="email"
-          placeholder="Email Address *"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-4 border rounded-2xl mb-6 text-lg"
-        />
+        <input type="email" placeholder="Email Address *" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-4 border rounded-2xl mb-6 text-lg" />
 
-        <input
-          type="text"
-          placeholder="Club Secret Code *"
-          value={secretCode}
-          onChange={(e) => setSecretCode(e.target.value.toUpperCase())}
-          className="w-full p-4 border rounded-2xl mb-8 text-lg"
-        />
+        <input type="text" placeholder="Club Secret Code *" value={secretCode} onChange={(e) => setSecretCode(e.target.value.toUpperCase())} className="w-full p-4 border rounded-2xl mb-8 text-lg" />
 
         {error && <p className="text-red-600 text-center mb-6 font-medium">{error}</p>}
 
-        <button
-          onClick={handleSubmit}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-semibold text-xl"
-        >
+        <button onClick={handleSubmit} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-semibold text-xl">
           {isRegisterMode ? "Register" : "Login"}
         </button>
 

@@ -1,25 +1,27 @@
-import { pgTable, text, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 
 export const players = pgTable("players", {
-  id: text("id").primaryKey(),
+  id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull(),
+  email: text("email").unique().notNull(),
   phone: text("phone"),
   whatsapp: text("whatsapp"),
   contactConsent: boolean("contact_consent").default(true),
-  points: integer("points").default(1000),
+  points: integer("points").default(0),
   gamesWon: integer("games_won").default(0),
   gamesLost: integer("games_lost").default(0),
   matchesPlayed: integer("matches_played").default(0),
-  isAdmin: boolean("is_admin").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const matches = pgTable("matches", {
-  id: text("id").primaryKey(),
-  winnerId: text("winner_id").notNull(),
-  loserId: text("loser_id").notNull(),
+  id: serial("id").primaryKey(),
+  winnerId: integer("winner_id").notNull(),
+  loserId: integer("loser_id").notNull(),
+  winnerName: text("winner_name").notNull(),
+  loserName: text("loser_name").notNull(),
   winnerGames: integer("winner_games").notNull(),
   loserGames: integer("loser_games").notNull(),
-  date: timestamp("date").defaultNow(),
+  date: text("date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });

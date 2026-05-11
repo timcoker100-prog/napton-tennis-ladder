@@ -10,7 +10,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [secretCode, setSecretCode] = useState("");
   const [error, setError] = useState("");
-  const [isRegisterMode, setIsRegisterMode] = useState(true); // true = Register, false = Login
+  const [isRegisterMode, setIsRegisterMode] = useState(true);
 
   const handleSubmit = () => {
     if (secretCode !== SECRET_CODE) {
@@ -24,13 +24,10 @@ export default function LoginPage() {
 
     const trimmedEmail = email.trim().toLowerCase();
 
-    // Check for duplicate email on Register
     if (isRegisterMode) {
-      const existingUsers = JSON.parse(localStorage.getItem('players') || '[]');
-      const emailExists = existingUsers.some((p: any) => p.email === trimmedEmail);
-      
-      if (emailExists) {
-        setError("❌ This email is already registered. Use Login instead.");
+      const existing = JSON.parse(localStorage.getItem('players') || '[]');
+      if (existing.some((p: any) => p.email === trimmedEmail)) {
+        setError("❌ This email is already registered. Please use Login.");
         return;
       }
       if (!name.trim()) {

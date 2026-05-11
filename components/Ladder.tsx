@@ -62,9 +62,12 @@ export default function Ladder() {
       return updated;
     });
     setShowProfileModal(false);
+    // Force refresh
+    setTimeout(loadData, 100);
   };
 
   const recordMatch = (winnerId: string, loserId: string, winnerGames: number, loserGames: number) => {
+    // ... (keep your existing recordMatch logic)
     const winner = players.find(p => p.id === winnerId);
     const loser = players.find(p => p.id === loserId);
     if (!winner || !loser) return;
@@ -115,19 +118,15 @@ export default function Ladder() {
         <h2 className="text-3xl font-bold text-emerald-700">Current Ladder</h2>
         <div className="flex gap-3">
           <button onClick={loadData} className="px-5 py-3 border rounded-full hover:bg-gray-100">🔄 Refresh</button>
-          
           <button onClick={() => setShowProfileModal(true)} className="px-6 py-3 border border-emerald-600 text-emerald-700 rounded-full hover:bg-emerald-50 font-medium">My Profile</button>
-
           <button onClick={() => setShowMatchModal(true)} className="px-6 py-3 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 font-medium">+ Record Match</button>
-
           <a href="/instructions" className="px-6 py-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 font-medium">📋 How to Use</a>
-
           <a href="/admin" className="px-6 py-3 bg-amber-600 text-white rounded-full hover:bg-amber-700 font-medium">Admin</a>
-
           <button onClick={() => { if (confirm("Logout?")) { localStorage.removeItem('currentUser'); window.location.href = '/login'; } }} className="px-6 py-3 bg-red-600 text-white rounded-full hover:bg-red-700 font-medium">Logout</button>
         </div>
       </div>
 
+      {/* Rest of your table stays the same */}
       <div className="bg-white rounded-2xl shadow overflow-hidden mb-12">
         <table className="w-full">
           <thead className="bg-emerald-700 text-white">

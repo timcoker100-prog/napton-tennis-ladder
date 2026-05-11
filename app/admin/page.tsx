@@ -11,25 +11,20 @@ export default function AdminPage() {
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
       setIsLoggedIn(true);
-      setMessage("");
     } else {
       setMessage("❌ Incorrect admin password");
     }
   };
 
   const resetLadder = () => {
-    if (!confirm("⚠️ This will DELETE ALL players and matches.\n\nAre you 100% sure?")) {
-      return;
-    }
-    if (!confirm("FINAL WARNING: This cannot be undone. Type 'RESET' to confirm.")) {
-      return;
-    }
+    if (!confirm("⚠️ WARNING: This will permanently delete ALL players and match history.")) return;
+    if (!confirm("FINAL CONFIRMATION: Type 'RESET' to proceed")) return;
 
     localStorage.clear();
     setMessage("✅ Ladder has been completely reset");
-    
+
     setTimeout(() => {
-      window.location.reload();
+      window.location.href = '/ladder';
     }, 1500);
   };
 
@@ -37,24 +32,18 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
-          <h1 className="text-3xl font-bold text-center mb-8 text-amber-700">Admin Access</h1>
-          
+          <h1 className="text-3xl font-bold text-center mb-8">Admin Access</h1>
           <input
             type="password"
-            placeholder="Enter Admin Password"
+            placeholder="Admin Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-4 border rounded-2xl mb-6 text-lg"
+            className="w-full p-4 border rounded-2xl mb-6"
           />
-
-          <button 
-            onClick={handleLogin} 
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white py-4 rounded-2xl font-semibold text-xl"
-          >
+          <button onClick={handleLogin} className="w-full bg-amber-600 hover:bg-amber-700 text-white py-4 rounded-2xl font-semibold">
             Login as Admin
           </button>
-
-          {message && <p className="text-center mt-4 text-red-600">{message}</p>}
+          {message && <p className="text-red-600 text-center mt-4">{message}</p>}
         </div>
       </div>
     );
@@ -65,13 +54,13 @@ export default function AdminPage() {
       <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-10">
         <h1 className="text-4xl font-bold text-center mb-10 text-amber-700">Admin Dashboard</h1>
         
-        <div className="bg-red-50 border-2 border-red-300 rounded-3xl p-10 text-center">
-          <h2 className="text-2xl font-bold text-red-700 mb-6">Danger Zone</h2>
-          <p className="text-red-600 mb-8">This will permanently delete ALL players and all match history.</p>
+        <div className="bg-red-50 border border-red-300 rounded-3xl p-10 text-center">
+          <h2 className="text-2xl font-bold text-red-700 mb-4">Danger Zone</h2>
+          <p className="text-red-600 mb-8">This action cannot be undone.</p>
           
           <button 
             onClick={resetLadder}
-            className="bg-red-600 hover:bg-red-700 text-white px-12 py-5 rounded-2xl font-bold text-xl shadow-lg"
+            className="bg-red-600 hover:bg-red-700 text-white px-12 py-5 rounded-2xl font-bold text-xl w-full"
           >
             RESET ENTIRE LADDER
           </button>
@@ -83,7 +72,7 @@ export default function AdminPage() {
           </a>
         </div>
 
-        {message && <p className="text-center mt-8 text-green-600 font-medium">{message}</p>}
+        {message && <p className="text-center mt-8 text-green-600 font-medium text-lg">{message}</p>}
       </div>
     </div>
   );

@@ -17,9 +17,7 @@ export default function AdminPage() {
 
   const loadPlayers = () => {
     const saved = localStorage.getItem('players');
-    if (saved) {
-      setPlayers(JSON.parse(saved));
-    }
+    if (saved) setPlayers(JSON.parse(saved));
   };
 
   const handleLogin = () => {
@@ -32,8 +30,7 @@ export default function AdminPage() {
   };
 
   const removePlayer = (id: string, name: string) => {
-    if (!confirm(`Remove ${name} from the ladder? This cannot be undone.`)) return;
-
+    if (!confirm(`Remove ${name} from the ladder?`)) return;
     const updated = players.filter(p => p.id !== id);
     localStorage.setItem('players', JSON.stringify(updated));
     setPlayers(updated);
@@ -41,11 +38,11 @@ export default function AdminPage() {
   };
 
   const resetLadder = () => {
-    if (!confirm("⚠️ This will delete ALL players and matches!")) return;
-    if (!confirm("FINAL WARNING: Type 'RESET' to confirm")) return;
+    if (!confirm("⚠️ Delete ALL players and matches?")) return;
+    if (!confirm("FINAL WARNING - Type 'RESET' to confirm")) return;
 
     localStorage.clear();
-    setMessage("✅ Entire ladder has been reset");
+    setMessage("✅ Ladder completely reset");
     setTimeout(() => window.location.href = '/ladder', 1500);
   };
 
@@ -54,19 +51,8 @@ export default function AdminPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
           <h1 className="text-3xl font-bold text-center mb-8 text-amber-700">Admin Access</h1>
-          <input
-            type="password"
-            placeholder="Enter Admin Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-4 border rounded-2xl mb-6"
-          />
-          <button 
-            onClick={handleLogin} 
-            className="w-full bg-amber-600 hover:bg-amber-700 text-white py-4 rounded-2xl font-semibold text-xl"
-          >
-            Login as Admin
-          </button>
+          <input type="password" placeholder="Admin Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-4 border rounded-2xl mb-6" />
+          <button onClick={handleLogin} className="w-full bg-amber-600 hover:bg-amber-700 text-white py-4 rounded-2xl font-semibold">Login as Admin</button>
           {message && <p className="text-red-600 text-center mt-4">{message}</p>}
         </div>
       </div>
@@ -104,21 +90,16 @@ export default function AdminPage() {
 
         <div className="bg-red-50 border-2 border-red-300 rounded-3xl p-10 text-center">
           <h3 className="text-red-700 font-bold text-xl mb-4">Danger Zone</h3>
-          <button 
-            onClick={resetLadder}
-            className="bg-red-600 hover:bg-red-700 text-white px-12 py-5 rounded-2xl font-bold text-xl w-full"
-          >
-            RESET ENTIRE LADDER (Clear Everything)
+          <button onClick={resetLadder} className="bg-red-600 hover:bg-red-700 text-white px-12 py-5 rounded-2xl font-bold text-xl w-full">
+            RESET ENTIRE LADDER
           </button>
         </div>
 
         <div className="mt-10 text-center">
-          <a href="/ladder" className="inline-block bg-emerald-600 text-white px-10 py-4 rounded-2xl font-medium hover:bg-emerald-700">
-            ← Back to Ladder
-          </a>
+          <a href="/ladder" className="inline-block bg-emerald-600 text-white px-10 py-4 rounded-2xl font-medium hover:bg-emerald-700">← Back to Ladder</a>
         </div>
 
-        {message && <p className="text-center mt-8 text-green-600 font-medium text-lg">{message}</p>}
+        {message && <p className="text-center mt-8 text-green-600 font-medium">{message}</p>}
       </div>
     </div>
   );

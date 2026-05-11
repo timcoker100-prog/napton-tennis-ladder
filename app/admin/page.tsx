@@ -1,12 +1,28 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const ADMIN_PASSWORD = "ADMIN2026";
+
+type Player = {
+  id: string;
+  name: string;
+  email?: string;
+};
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [players, setPlayers] = useState<Player[]>([]);
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    if (isLoggedIn) loadPlayers();
+  }, [isLoggedIn]);
+
+  const loadPlayers = () => {
+    const saved = localStorage.getItem('players');
+    if (saved) setPlayers(JSON.parse(saved));
+  };
 
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
@@ -16,16 +32,22 @@ export default function AdminPage() {
     }
   };
 
+  const removePlayer = (id: string, name: string) => {
+    if (!confirm(`Remove ${name} from the ladder?`)) return;
+
+    const updated = players.filter(p => p.id !== id);
+    localStorage.setItem('players', JSON.stringify(updated));
+    setPlayers(updated);
+    setMessage(`✅ Removed ${name}`);
+  };
+
   const resetLadder = () => {
-    if (!confirm("⚠️ WARNING: This will permanently delete ALL players and match history.")) return;
-    if (!confirm("FINAL CONFIRMATION: Type 'RESET' to proceed")) return;
+    if (!confirm("⚠️ Delete ALL players and matches?")) return;
+    if (!confirm("FINAL WARNING - Type 'RESET' to confirm")) return;
 
     localStorage.clear();
-    setMessage("✅ Ladder has been completely reset");
-
-    setTimeout(() => {
-      window.location.href = '/ladder';
-    }, 1500);
+    setMessage("✅ Ladder completely reset");
+    setTimeout(() => window.location.href = '/ladder', 1500);
   };
 
   if (!isLoggedIn) {
@@ -33,16 +55,8 @@ export default function AdminPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
         <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
           <h1 className="text-3xl font-bold text-center mb-8">Admin Access</h1>
-          <input
-            type="password"
-            placeholder="Admin Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full p-4 border rounded-2xl mb-6"
-          />
-          <button onClick={handleLogin} className="w-full bg-amber-600 hover:bg-amber-700 text-white py-4 rounded-2xl font-semibold">
-            Login as Admin
-          </button>
+          <input type="password" placeholder="Admin Password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full p-4 border rounded-2xl mb-6" />
+          <button onClick={handleLogin} className="w-full bg-amber-600 hover:bg-amber-700 text-white py-4 rounded-2xl font-semibold">Login as Admin</button>
           {message && <p className="text-red-600 text-center mt-4">{message}</p>}
         </div>
       </div>
@@ -52,27 +66,31 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-10">
-        <h1 className="text-4xl font-bold text-center mb-10 text-amber-700">Admin Dashboard</h1>
-        
-        <div className="bg-red-50 border border-red-300 rounded-3xl p-10 text-center">
-          <h2 className="text-2xl font-bold text-red-700 mb-4">Danger Zone</h2>
-          <p className="text-red-600 mb-8">This action cannot be undone.</p>
-          
-          <button 
-            onClick={resetLadder}
-            className="bg-red-600 hover:bg-red-700 text-white px-12 py-5 rounded-2xl font-bold text-xl w-full"
-          >
-            RESET ENTIRE LADDER
+        <h1 className="text-4xl font-bold text-center mb-8 text-amber-700">Admin Dashboard</h1>
+
+        <div className="mb-10">
+          <h2 className="text-xl font-semibold mb-4">Players ({players.length})</h2>
+          <div className="space-y-2 max-h-96 overflow-auto">
+            {players.map(player => (
+              <div key={player.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
+                <span className="font-medium">{player.name} ({player.email})</span>
+                <button onClick={() => removePlayer(player.id, player.name)} className="text-red-600 hover:text-red-700 font-medium">Remove</button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-red-50 border border-red-300 rounded-3xl p-8 text-center">
+          <button onClick={resetLadder} className="bg-red-600 hover:bg-red-700 text-white px-12 py-5 rounded-2xl font-bold text-xl">
+            RESET ENTIRE LADDER (Clear All Data)
           </button>
         </div>
 
         <div className="mt-10 text-center">
-          <a href="/ladder" className="inline-block bg-emerald-600 text-white px-10 py-4 rounded-2xl font-medium hover:bg-emerald-700">
-            ← Back to Ladder
-          </a>
+          <a href="/ladder" className="inline-block bg-emerald-600 text-white px-10 py-4 rounded-2xl font-medium hover:bg-emerald-700">← Back to Ladder</a>
         </div>
 
-        {message && <p className="text-center mt-8 text-green-600 font-medium text-lg">{message}</p>}
+        {message && <p className="text-center mt-8 text-green-600 font-medium">{message}</p>}
       </div>
     </div>
   );

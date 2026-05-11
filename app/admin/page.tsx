@@ -15,10 +15,6 @@ export default function AdminPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [message, setMessage] = useState("");
 
-  useEffect(() => {
-    if (isLoggedIn) loadPlayers();
-  }, [isLoggedIn]);
-
   const loadPlayers = () => {
     const saved = localStorage.getItem('players');
     if (saved) setPlayers(JSON.parse(saved));
@@ -27,6 +23,7 @@ export default function AdminPage() {
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
       setIsLoggedIn(true);
+      loadPlayers();
     } else {
       setMessage("❌ Incorrect admin password");
     }
@@ -70,11 +67,16 @@ export default function AdminPage() {
 
         <div className="mb-10">
           <h2 className="text-xl font-semibold mb-4">Players ({players.length})</h2>
-          <div className="space-y-2 max-h-96 overflow-auto">
+          <div className="space-y-3 max-h-96 overflow-auto">
             {players.map(player => (
               <div key={player.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
-                <span className="font-medium">{player.name} ({player.email})</span>
-                <button onClick={() => removePlayer(player.id, player.name)} className="text-red-600 hover:text-red-700 font-medium">Remove</button>
+                <span>{player.name} {player.email && `(${player.email})`}</span>
+                <button 
+                  onClick={() => removePlayer(player.id, player.name)}
+                  className="text-red-600 hover:text-red-700 font-medium px-4 py-2"
+                >
+                  Remove
+                </button>
               </div>
             ))}
           </div>
@@ -82,12 +84,14 @@ export default function AdminPage() {
 
         <div className="bg-red-50 border border-red-300 rounded-3xl p-8 text-center">
           <button onClick={resetLadder} className="bg-red-600 hover:bg-red-700 text-white px-12 py-5 rounded-2xl font-bold text-xl">
-            RESET ENTIRE LADDER (Clear All Data)
+            RESET ENTIRE LADDER
           </button>
         </div>
 
         <div className="mt-10 text-center">
-          <a href="/ladder" className="inline-block bg-emerald-600 text-white px-10 py-4 rounded-2xl font-medium hover:bg-emerald-700">← Back to Ladder</a>
+          <a href="/ladder" className="inline-block bg-emerald-600 text-white px-10 py-4 rounded-2xl font-medium hover:bg-emerald-700">
+            ← Back to Ladder
+          </a>
         </div>
 
         {message && <p className="text-center mt-8 text-green-600 font-medium">{message}</p>}

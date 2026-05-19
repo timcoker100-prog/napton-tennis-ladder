@@ -1,113 +1,179 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '../../lib/supabase';
 
-const SECRET_CODE = "N&P2026";
+const SECRET_CODE = 'N&P2026';
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
-  const [secretCode, setSecretCode] = useState("");
-  const [error, setError] = useState("");
   const [isRegisterMode, setIsRegisterMode] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [playerName, setPlayerName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  const handleSubmit = () => {
-    if (secretCode !== SECRET_CODE) {
-      setError("❌ Incorrect club code");
-      return;
-    }
-    if (!email.trim()) {
-      setError("Email is required");
-      return;
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
     const trimmedEmail = email.trim().toLowerCase();
-    const playerName = name.trim() || "Unnamed Player";
-
-    const existingPlayers = JSON.parse(localStorage.getItem('players') || '[]');
-
-    // Check for duplicate email
-    if (isRegisterMode && existingPlayers.some((p: any) => p.email === trimmedEmail)) {
-      setError("❌ This email is already registered. Please use Login.");
-      return;
-    }
-
-    // Create new player (compatible with old structure)
-    const newPlayer = {
-      id: Date.now().toString(),
-      name: playerName,
-      email: trimmedEmail,
-      phone: phone.trim() || "",
-      whatsapp: whatsapp.trim() || "",
-      contactConsent: true,
-      points: 0,
-      gamesWon: 0,
-      gamesLost: 0,
-      matchesPlayed: 0,
-    };
-
-    let updatedPlayers = [...existingPlayers];
 
     if (isRegisterMode) {
-      updatedPlayers.push(newPlayer);
-    } else {
-      // Login - update existing player if found
-      const index = updatedPlayers.findIndex((p: any) => p.email === trimmedEmail);
-      if (index !== -1) {
-        updatedPlayers[index] = { ...updatedPlayers[index], ...newPlayer };
+      if (!playerName.trim() || !trimmedEmail || password !== SECRET_CODE) {
+        setError('Please fill all fields and use the correct code');
+        setLoading(false);
+        return;
+      }
+
+      // Check if email already exists
+      const { data: existing } = await supabase
+        .from('players')
+        .select('id')
+        .eq('email', trimmedEmail)
+        .single();
+
+      if (existing) {
+        setError('This email is already registered');
+        setLoading(false);
+        return;
+      }
+
+      // Create player immediately
+      const { error: insertError } = await supabase
+        .from('players')
+        .insert({
+          name: playerName.trim(),
+          email: trimmedEmail,
+          phone: phone.trim() || null,
+          whatsapp: whatsapp.trim() || null,
+          contact_consent: true,
+          points: 0,
+        });
+
+      if (insertError) {
+        setError('Failed to create player: ' + insertError.message);
       } else {
-        updatedPlayers.push(newPlayer);
+        alert('✅ Registration successful! You are now on the ladder.');
+        router.push('/ladder');
+      }
+    } else {
+      // Login mode - just check if exists
+      const { data } = await supabase
+        .from('players')
+        .select('*')
+        .eq('email', trimmedEmail)
+        .single();
+
+      if (data) {
+        router.push('/ladder');
+      } else {
+        setError('No account found with this email');
       }
     }
 
-    localStorage.setItem('players', JSON.stringify(updatedPlayers));
-    localStorage.setItem('currentUser', JSON.stringify(newPlayer));
-
-    router.push('/ladder');
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
-        <div className="text-center mb-10">
-          <div className="text-6xl mb-4">🎾</div>
-          <h1 className="text-3xl font-bold text-emerald-700">Napton Tennis Club</h1>
-          <p className="text-gray-600 mt-2">Singles Ladder</p>
+    <div className="min-h-screen bg-emerald-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8">
+        <h1 className="text-4xl font-bold text-emerald-800 text-center mb-2">Napton Tennis Club</h1>
+        <p className="text-center text-emerald-600 mb-8">Singles Ladder</p>
+
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setIsRegisterMode(true)}
+            className={`flex-1 py-3 rounded-2xl font-medium ${isRegisterMode ? 'bg-emerald-700 text-white' : 'bg-gray-100'}`}
+          >
+            Register
+          </button>
+          <button
+            onClick={() => setIsRegisterMode(false)}
+            className={`flex-1 py-3 rounded-2xl font-medium ${!isRegisterMode ? 'bg-emerald-700 text-white' : 'bg-gray-100'}`}
+          >
+            Login
+          </button>
         </div>
 
-        <div className="flex gap-2 mb-8 bg-gray-100 p-1 rounded-2xl">
-          <button onClick={() => setIsRegisterMode(true)} className={`flex-1 py-3 rounded-xl font-medium ${isRegisterMode ? 'bg-white shadow' : 'text-gray-500'}`}>Register</button>
-          <button onClick={() => setIsRegisterMode(false)} className={`flex-1 py-3 rounded-xl font-medium ${!isRegisterMode ? 'bg-white shadow' : 'text-gray-500'}`}>Login</button>
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-600"
+              required
+            />
+          </div>
 
-        <h2 className="text-2xl font-semibold text-center mb-8">
-          {isRegisterMode ? "Create New Account" : "Login"}
-        </h2>
+          {isRegisterMode && (
+            <>
+              <div>
+                <label className="block text-sm font-medium mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-600"
+                  required
+                />
+              </div>
 
-        {isRegisterMode && (
-          <input type="text" placeholder="Full Name *" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-4 border rounded-2xl mb-4 text-lg" />
-        )}
+              <div>
+                <label className="block text-sm font-medium mb-1">Phone (optional)</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-600"
+                />
+              </div>
 
-        <input type="email" placeholder="Email Address *" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-4 border rounded-2xl mb-4 text-lg" />
+              <div>
+                <label className="block text-sm font-medium mb-1">WhatsApp (optional)</label>
+                <input
+                  type="tel"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-600"
+                />
+              </div>
+            </>
+          )}
 
-        <input type="tel" placeholder="Phone Number (optional)" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full p-4 border rounded-2xl mb-4 text-lg" />
+          <div>
+            <label className="block text-sm font-medium mb-1">
+              Secret Code {isRegisterMode && <span className="text-red-500">(required)</span>}
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-600"
+              required
+            />
+            {isRegisterMode && (
+              <p className="text-xs text-gray-500 mt-1">Contact timcoker100@gmail.com for the code</p>
+            )}
+          </div>
 
-        <input type="text" placeholder="WhatsApp Number (optional)" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="w-full p-4 border rounded-2xl mb-6 text-lg" />
+          {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <input type="text" placeholder="Club Secret Code *" value={secretCode} onChange={(e) => setSecretCode(e.target.value.toUpperCase())} className="w-full p-4 border rounded-2xl mb-8 text-lg" />
-
-        {error && <p className="text-red-600 text-center mb-6 font-medium">{error}</p>}
-
-        <button onClick={handleSubmit} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl font-semibold text-xl">
-          {isRegisterMode ? "Register" : "Login"}
-        </button>
-
-        <p className="text-center text-xs text-gray-400 mt-8">
-          Club members only • Contact timcoker100@gmail.com for the code
-        </p>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-emerald-700 hover:bg-emerald-800 text-white py-4 rounded-2xl font-semibold text-lg disabled:opacity-50"
+          >
+            {loading ? 'Processing...' : isRegisterMode ? 'Register & Join Ladder' : 'Login'}
+          </button>
+        </form>
       </div>
     </div>
   );

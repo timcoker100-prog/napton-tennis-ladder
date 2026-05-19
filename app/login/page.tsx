@@ -8,6 +8,8 @@ export default function LoginPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [secretCode, setSecretCode] = useState("");
   const [error, setError] = useState("");
   const [isRegisterMode, setIsRegisterMode] = useState(true);
@@ -35,8 +37,8 @@ export default function LoginPage() {
       id: Date.now().toString(),
       name: playerName,
       email: trimmedEmail,
-      phone: "",
-      whatsapp: "",
+      phone: phone.trim(),
+      whatsapp: whatsapp.trim(),
       contactConsent: true,
       points: 0,
       gamesWon: 0,
@@ -76,7 +78,11 @@ export default function LoginPage() {
           <input type="text" placeholder="Full Name *" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-4 border rounded-2xl mb-4 text-lg" />
         )}
 
-        <input type="email" placeholder="Email Address *" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-4 border rounded-2xl mb-6 text-lg" />
+        <input type="email" placeholder="Email Address *" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full p-4 border rounded-2xl mb-4 text-lg" />
+
+        <input type="tel" placeholder="Phone Number (optional)" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full p-4 border rounded-2xl mb-4 text-lg" />
+
+        <input type="text" placeholder="WhatsApp Number (optional)" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="w-full p-4 border rounded-2xl mb-6 text-lg" />
 
         <input type="text" placeholder="Club Secret Code *" value={secretCode} onChange={(e) => setSecretCode(e.target.value.toUpperCase())} className="w-full p-4 border rounded-2xl mb-8 text-lg" />
 

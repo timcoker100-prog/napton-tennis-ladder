@@ -28,17 +28,20 @@ export default function LoginPage() {
     const playerName = name.trim() || "Unnamed Player";
 
     const existingPlayers = JSON.parse(localStorage.getItem('players') || '[]');
+
+    // Check for duplicate email
     if (isRegisterMode && existingPlayers.some((p: any) => p.email === trimmedEmail)) {
       setError("❌ This email is already registered. Please use Login.");
       return;
     }
 
+    // Create new player (compatible with old structure)
     const newPlayer = {
       id: Date.now().toString(),
       name: playerName,
       email: trimmedEmail,
-      phone: phone.trim(),
-      whatsapp: whatsapp.trim(),
+      phone: phone.trim() || "",
+      whatsapp: whatsapp.trim() || "",
       contactConsent: true,
       points: 0,
       gamesWon: 0,
@@ -46,9 +49,19 @@ export default function LoginPage() {
       matchesPlayed: 0,
     };
 
-    const updatedPlayers = isRegisterMode 
-      ? [...existingPlayers, newPlayer] 
-      : existingPlayers.map((p: any) => p.email === trimmedEmail ? newPlayer : p);
+    let updatedPlayers = [...existingPlayers];
+
+    if (isRegisterMode) {
+      updatedPlayers.push(newPlayer);
+    } else {
+      // Login - update existing player if found
+      const index = updatedPlayers.findIndex((p: any) => p.email === trimmedEmail);
+      if (index !== -1) {
+        updatedPlayers[index] = { ...updatedPlayers[index], ...newPlayer };
+      } else {
+        updatedPlayers.push(newPlayer);
+      }
+    }
 
     localStorage.setItem('players', JSON.stringify(updatedPlayers));
     localStorage.setItem('currentUser', JSON.stringify(newPlayer));

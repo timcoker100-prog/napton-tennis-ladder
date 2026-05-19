@@ -7,8 +7,8 @@ interface Player {
   id: string;
   name: string;
   email: string;
-  phone?: string;
-  whatsapp?: string;
+  phone?: string | null;
+  whatsapp?: string | null;
   points: number;
   contact_consent: boolean;
 }
@@ -17,11 +17,11 @@ interface Match {
   id: string;
   winner_id: string;
   loser_id: string;
+  winner_name: string;
+  loser_name: string;
   winner_games: number;
   loser_games: number;
   created_at: string;
-  winner_name?: string;
-  loser_name?: string;
 }
 
 export default function Ladder() {
@@ -36,18 +36,16 @@ export default function Ladder() {
   const [loading, setLoading] = useState(false);
 
   const loadData = async () => {
+    // Load players
     const { data: playersData } = await supabase
       .from('players')
       .select('*')
       .order('points', { ascending: false });
 
+    // Load matches
     const { data: matchesData } = await supabase
       .from('matches')
-      .select(`
-        *,
-        winner:winner_id(name),
-        loser:loser_id(name)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     setPlayers(playersData || []);
@@ -60,6 +58,13 @@ export default function Ladder() {
     return () => clearInterval(interval);
   }, []);
 
+  // Set current user (you can improve this later with proper auth)
+  useEffect(() => {
+    if (players.length > 0) {
+      setCurrentUser(players[0]); // Currently shows first player as "you"
+    }
+  }, [players]);
+
   const recordMatch = async () => {
     if (!selectedOpponent || winnerGames + loserGames !== 15) {
       alert("Total games must be exactly 15");
@@ -71,12 +76,13 @@ export default function Ladder() {
     const winner = currentUser!;
     const loser = selectedOpponent;
 
-    // Insert match
     const { error: matchError } = await supabase
       .from('matches')
       .insert({
         winner_id: winner.id,
         loser_id: loser.id,
+        winner_name: winner.name,
+        loser_name: loser.name,
         winner_games: winnerGames,
         loser_games: loserGames,
       });
@@ -87,26 +93,25 @@ export default function Ladder() {
       return;
     }
 
-    // Update winner points
+    // Update points
     await supabase
       .from('players')
       .update({ points: winner.points + winnerGames })
       .eq('id', winner.id);
 
-    // Update loser points
     await supabase
       .from('players')
       .update({ points: loser.points + loserGames })
       .eq('id', loser.id);
 
     alert(`✅ Match recorded! ${winner.name} ${winnerGames} - ${loserGames} ${loser.name}`);
-    
+
     setShowMatchModal(false);
     setSelectedOpponent(null);
     setWinnerGames(8);
     setLoserGames(7);
-    
-    await loadData(); // Refresh immediately
+
+    await loadData();
     setLoading(false);
   };
 
@@ -118,13 +123,6 @@ export default function Ladder() {
     setSelectedOpponent(opponent);
     setShowMatchModal(true);
   };
-
-  // Find current user (first one for now - you can improve this later)
-  useEffect(() => {
-    if (players.length > 0) {
-      setCurrentUser(players[0]); // Tim Coker in your screenshot
-    }
-  }, [players]);
 
   return (
     <div className="min-h-screen bg-emerald-50 pb-12">
@@ -138,22 +136,31 @@ export default function Ladder() {
 
       {/* Action Buttons */}
       <div className="max-w-5xl mx-auto px-4 py-6 flex flex-wrap gap-3">
-        <button onClick={loadData} className="flex items-center gap-2 bg-white border border-gray-300 px-5 py-2.5 rounded-3xl hover:bg-gray-50">
+        <button 
+          onClick={loadData} 
+          className="flex items-center gap-2 bg-white border border-gray-300 px-5 py-2.5 rounded-3xl hover:bg-gray-50 text-sm"
+        >
           🔄 Refresh
         </button>
-        <button onClick={() => setShowProfileModal(true)} className="flex items-center gap-2 bg-white border border-emerald-600 text-emerald-700 px-5 py-2.5 rounded-3xl hover:bg-emerald-50">
+        <button 
+          onClick={() => setShowProfileModal(true)} 
+          className="flex items-center gap-2 bg-white border border-emerald-600 text-emerald-700 px-5 py-2.5 rounded-3xl hover:bg-emerald-50 text-sm"
+        >
           👤 My Profile
         </button>
-        <button onClick={() => setShowMatchModal(true)} className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-2.5 rounded-3xl hover:bg-emerald-700">
+        <button 
+          onClick={() => setShowMatchModal(true)} 
+          className="flex items-center gap-2 bg-emerald-600 text-white px-6 py-2.5 rounded-3xl hover:bg-emerald-700 text-sm"
+        >
           + Record Match
         </button>
-        <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-3xl hover:bg-blue-700">
+        <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-3xl hover:bg-blue-700 text-sm">
           📋 How to Use
         </button>
-        <button className="flex items-center gap-2 bg-orange-600 text-white px-5 py-2.5 rounded-3xl hover:bg-orange-700">
+        <button className="flex items-center gap-2 bg-orange-600 text-white px-5 py-2.5 rounded-3xl hover:bg-orange-700 text-sm">
           ⚙️ Admin
         </button>
-        <button className="flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-3xl hover:bg-red-700">
+        <button className="flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-3xl hover:bg-red-700 text-sm">
           Logout
         </button>
       </div>
@@ -179,10 +186,16 @@ export default function Ladder() {
                   <td className="px-6 py-4 font-medium">{player.name}</td>
                   <td className="px-6 py-4 font-semibold text-emerald-700">{player.points}</td>
                   <td className="px-6 py-4">
-                    <div className="flex gap-3">
-                      {player.email && <a href={`mailto:${player.email}`} className="text-blue-600 hover:text-blue-800">✉️</a>}
-                      {player.phone && <a href={`tel:${player.phone}`} className="text-pink-600 hover:text-pink-800">📞</a>}
-                      {player.whatsapp && <a href={`https://wa.me/${player.whatsapp.replace(/\D/g,'')}`} target="_blank" className="text-green-600 hover:text-green-800">💬</a>}
+                    <div className="flex gap-4">
+                      {player.email && (
+                        <a href={`mailto:${player.email}`} className="text-blue-600 hover:text-blue-800 text-xl">✉️</a>
+                      )}
+                      {player.phone && (
+                        <a href={`tel:${player.phone}`} className="text-pink-600 hover:text-pink-800 text-xl">📞</a>
+                      )}
+                      {player.whatsapp && (
+                        <a href={`https://wa.me/${player.whatsapp.replace(/\D/g,'')}`} target="_blank" className="text-green-600 hover:text-green-800 text-xl">💬</a>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -190,17 +203,41 @@ export default function Ladder() {
             </tbody>
           </table>
         </div>
+
+        {/* Recent Matches */}
+        {matches.length > 0 && (
+          <div className="mt-8 bg-white rounded-3xl shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Recent Matches</h2>
+            <div className="space-y-3">
+              {matches.slice(0, 10).map((match) => (
+                <div key={match.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-2xl">
+                  <div>
+                    <span className="font-medium">{match.winner_name}</span>
+                    {' '}beat{' '}
+                    <span className="font-medium">{match.loser_name}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-mono">{match.winner_games}-{match.loser_games}</span>
+                    <div className="text-xs text-gray-500">
+                      {new Date(match.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Match Modal */}
+      {/* Record Match Modal */}
       {showMatchModal && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full">
             <h2 className="text-2xl font-bold mb-6">Record New Match</h2>
             
             <div className="space-y-6">
               <div>
-                <label className="block text-sm mb-2 font-medium">You (Winner?)</label>
+                <label className="block text-sm mb-2 font-medium">You</label>
                 <div className="bg-gray-100 p-4 rounded-2xl font-medium">
                   {currentUser?.name || "Loading..."}
                 </div>
@@ -231,7 +268,7 @@ export default function Ladder() {
                     type="number" 
                     value={winnerGames} 
                     onChange={(e) => setWinnerGames(Number(e.target.value))}
-                    className="w-full p-4 border border-gray-300 rounded-2xl text-2xl text-center"
+                    className="w-full p-4 border border-gray-300 rounded-2xl text-3xl text-center font-mono"
                   />
                 </div>
                 <div>
@@ -240,13 +277,9 @@ export default function Ladder() {
                     type="number" 
                     value={loserGames} 
                     onChange={(e) => setLoserGames(Number(e.target.value))}
-                    className="w-full p-4 border border-gray-300 rounded-2xl text-2xl text-center"
+                    className="w-full p-4 border border-gray-300 rounded-2xl text-3xl text-center font-mono"
                   />
                 </div>
-              </div>
-
-              <div className="text-center text-sm text-gray-500">
-                Total must = 15 games
               </div>
             </div>
 

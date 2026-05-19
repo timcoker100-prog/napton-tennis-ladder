@@ -78,12 +78,10 @@ export default function Ladder() {
       date: new Date().toLocaleDateString()
     };
 
-    // Update matches
     const updatedMatches = [newMatch, ...matches];
     setMatches(updatedMatches);
     localStorage.setItem('matches', JSON.stringify(updatedMatches));
 
-    // Update players points
     setPlayers(prev => {
       const updated = prev.map(player => {
         if (player.id === winnerId) {
@@ -129,7 +127,17 @@ export default function Ladder() {
           <button onClick={() => setShowMatchModal(true)} className="px-6 py-3 bg-emerald-600 text-white rounded-full">+ Record Match</button>
           <a href="/instructions" className="px-6 py-3 bg-blue-600 text-white rounded-full">📋 How to Use</a>
           <a href="/admin" className="px-6 py-3 bg-amber-600 text-white rounded-full">⚙️ Admin</a>
-          <button onClick={() => { if (confirm("Logout?")) { localStorage.removeItem('currentUser'); window.location.href = '/login'; } }} className="px-6 py-3 bg-red-600 text-white rounded-full">Logout</button>
+          <button 
+            onClick={() => { 
+              if (confirm("Logout?")) { 
+                localStorage.removeItem('currentUser'); 
+                window.location.href = '/login'; 
+              } 
+            }} 
+            className="px-6 py-3 bg-red-600 text-white rounded-full"
+          >
+            Logout
+          </button>
         </div>
 
         {/* Current Ladder */}
@@ -159,4 +167,40 @@ export default function Ladder() {
                           {player.phone && <a href={`tel:${player.phone}`}>📞</a>}
                         </div>
                       )}
-                   
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Recent Matches */}
+        {matches.length > 0 && (
+          <div className="bg-white rounded-3xl shadow overflow-hidden">
+            <div className="bg-emerald-700 text-white p-4 font-medium">Recent Matches</div>
+            <div className="p-4 space-y-3">
+              {matches.slice(0, 10).map(match => (
+                <div key={match.id} className="text-sm border-l-4 border-emerald-600 pl-3 py-1">
+                  {match.date} — <strong>{match.winnerName}</strong> beat {match.loserName} ({match.winnerGames}-{match.loserGames})
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <ProfileModal 
+        isOpen={showProfileModal} 
+        onClose={() => setShowProfileModal(false)} 
+        onSaved={handleProfileSaved} 
+      />
+      <MatchModal 
+        isOpen={showMatchModal} 
+        onClose={() => setShowMatchModal(false)} 
+        players={players} 
+        onMatchRecorded={recordMatch} 
+      />
+    </div>
+  );
+}

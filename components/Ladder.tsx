@@ -70,12 +70,25 @@ export default function Ladder() {
     }
   }, [players]);
 
-  // Record Match
+  // Check if these two players have already played
+  const hasPlayedBefore = (player1Id: string, player2Id: string) => {
+    return matches.some(m => 
+      (m.winner_id === player1Id && m.loser_id === player2Id) ||
+      (m.winner_id === player2Id && m.loser_id === player1Id)
+    );
+  };
+
   const recordMatch = async () => {
-    if (!selectedOpponent || winnerGames + loserGames !== 15) {
+    if (!selectedOpponent) return;
+    if (winnerGames + loserGames !== 15) {
       alert("Total games must be exactly 15");
       return;
     }
+    if (hasPlayedBefore(currentUser!.id, selectedOpponent.id)) {
+      alert("You have already played this opponent!");
+      return;
+    }
+
     setLoading(true);
     const winner = currentUser!;
     const loser = selectedOpponent;
@@ -107,7 +120,6 @@ export default function Ladder() {
     setLoading(false);
   };
 
-  // Save Profile
   const saveProfile = async () => {
     if (!currentUser) return;
     const { error } = await supabase.from('players').update({
@@ -124,7 +136,6 @@ export default function Ladder() {
     }
   };
 
-  // Admin
   const handleAdminLogin = () => {
     if (adminCodeInput === ADMIN_CODE) {
       setIsAdmin(true);
@@ -159,7 +170,6 @@ export default function Ladder() {
         </div>
       </div>
 
-      {/* All 6 Buttons */}
       <div className="max-w-5xl mx-auto px-4 py-6 flex flex-wrap gap-3">
         <button onClick={loadData} className="flex items-center gap-2 bg-white border border-gray-300 px-5 py-2.5 rounded-3xl hover:bg-gray-50">🔄 Refresh</button>
         <button onClick={() => setShowProfileModal(true)} className="flex items-center gap-2 bg-white border border-emerald-600 text-emerald-700 px-5 py-2.5 rounded-3xl hover:bg-emerald-50">👤 My Profile</button>
@@ -201,7 +211,6 @@ export default function Ladder() {
           </table>
         </div>
 
-        {/* Recent Matches */}
         {matches.length > 0 && (
           <div className="mt-8 bg-white rounded-3xl shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Recent Matches</h2>
@@ -209,9 +218,7 @@ export default function Ladder() {
               {matches.slice(0, 10).map((m) => (
                 <div key={m.id} className="flex justify-between bg-gray-50 p-4 rounded-2xl">
                   <div><span className="font-medium">{m.winner_name}</span> beat <span className="font-medium">{m.loser_name}</span></div>
-                  <div className="text-right text-sm">
-                    {m.winner_games}-{m.loser_games} • {m.date}
-                  </div>
+                  <div className="text-right text-sm">{m.winner_games}-{m.loser_games} • {m.date}</div>
                 </div>
               ))}
             </div>
@@ -219,6 +226,7 @@ export default function Ladder() {
         )}
       </div>
 
+      {/* All Modals (Profile, Match, How to Use, Admin) */}
       {/* Profile Modal */}
       {showProfileModal && currentUser && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -241,7 +249,7 @@ export default function Ladder() {
           <div className="bg-white rounded-3xl p-8 max-w-md w-full">
             <h2 className="text-2xl font-bold mb-6">Record New Match</h2>
             <div className="space-y-6">
-              <div><label className="block text-sm mb-2">You</label><div className="bg-gray-100 p-4 rounded-2xl">{currentUser?.name}</div></div>
+              <div><label className="block text-sm mb-2">You</label><div className="bg-gray-100 p-4 rounded-2xl font-medium">{currentUser?.name}</div></div>
               <div>
                 <label className="block text-sm mb-2">Opponent</label>
                 <select className="w-full p-4 border rounded-2xl" onChange={(e) => setSelectedOpponent(players.find(p => p.id === e.target.value) || null)}>
@@ -258,7 +266,9 @@ export default function Ladder() {
             </div>
             <div className="flex gap-3 mt-8">
               <button onClick={() => setShowMatchModal(false)} className="flex-1 py-4 border rounded-2xl">Cancel</button>
-              <button onClick={recordMatch} disabled={loading || !selectedOpponent} className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl disabled:opacity-50">{loading ? "Recording..." : "Record Match"}</button>
+              <button onClick={recordMatch} disabled={loading || !selectedOpponent} className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl disabled:opacity-50">
+                {loading ? "Recording..." : "Record Match"}
+              </button>
             </div>
           </div>
         </div>
@@ -269,11 +279,12 @@ export default function Ladder() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full">
             <h2 className="text-2xl font-bold mb-6">How to Use</h2>
-            <div className="space-y-4 text-sm">
+            <div className="space-y-4 text-sm leading-relaxed">
               <p><strong>1.</strong> Register with code <strong>N&P2026</strong></p>
-              <p><strong>2.</strong> Play exactly <strong>15 games</strong></p>
-              <p><strong>3.</strong> Record score (e.g. 9-6)</p>
+              <p><strong>2.</strong> Play exactly <strong>15 games</strong> total (not sets)</p>
+              <p><strong>3.</strong> Record score (e.g. 8-7, 9-6)</p>
               <p><strong>4.</strong> 1 point per game won</p>
+              <p><strong>5.</strong> You can only play each opponent <strong>once</strong></p>
             </div>
             <button onClick={() => setShowHowToUse(false)} className="mt-8 w-full py-4 bg-emerald-600 text-white rounded-2xl">Close</button>
           </div>
@@ -287,20 +298,22 @@ export default function Ladder() {
             <h2 className="text-2xl font-bold mb-6">Admin Panel</h2>
             {!isAdmin ? (
               <>
-                <input type="password" value={adminCodeInput} onChange={(e) => setAdminCodeInput(e.target.value)} placeholder="Admin Code" className="w-full p-4 border rounded-2xl mb-4" />
-                <button onClick={handleAdminLogin} className="w-full py-4 bg-orange-600 text-white rounded-2xl">Login</button>
+                <input type="password" value={adminCodeInput} onChange={(e) => setAdminCodeInput(e.target.value)} placeholder="Enter ADMIN2026" className="w-full p-4 border rounded-2xl mb-4" />
+                <button onClick={handleAdminLogin} className="w-full py-4 bg-orange-600 text-white rounded-2xl">Login as Admin</button>
               </>
             ) : (
-              <>
-                <button onClick={resetAllData} className="w-full py-4 bg-red-600 text-white rounded-2xl mb-4">Reset All Data</button>
-                <h3 className="font-semibold mt-6 mb-3">Remove Player</h3>
-                {players.map(p => (
-                  <div key={p.id} className="flex justify-between p-3 bg-gray-50 rounded-xl mb-2">
-                    <span>{p.name}</span>
-                    <button onClick={() => removePlayer(p.id, p.name)} className="text-red-600">Remove</button>
-                  </div>
-                ))}
-              </>
+              <div className="space-y-4">
+                <button onClick={resetAllData} className="w-full py-4 bg-red-600 text-white rounded-2xl">Reset ALL Data</button>
+                <div className="mt-6">
+                  <h3 className="font-semibold mb-3">Remove Player</h3>
+                  {players.map(p => (
+                    <div key={p.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-xl mb-2">
+                      <span>{p.name}</span>
+                      <button onClick={() => removePlayer(p.id, p.name)} className="text-red-600 text-sm">Remove</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
             <button onClick={() => { setShowAdminModal(false); setIsAdmin(false); setAdminCodeInput(''); }} className="mt-6 w-full py-4 border rounded-2xl">Close</button>
           </div>

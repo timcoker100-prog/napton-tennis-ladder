@@ -33,14 +33,16 @@ export default function Ladder() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
 
+  // Load data on mount and every 2 seconds
   const loadData = () => {
     try {
-      const p = localStorage.getItem('players');
-      const m = localStorage.getItem('matches');
-      if (p) setPlayers(JSON.parse(p));
-      if (m) setMatches(JSON.parse(m));
+      const savedPlayers = localStorage.getItem('players');
+      const savedMatches = localStorage.getItem('matches');
+      
+      if (savedPlayers) setPlayers(JSON.parse(savedPlayers));
+      if (savedMatches) setMatches(JSON.parse(savedMatches));
     } catch (e) {
-      console.error(e);
+      console.error("Load error", e);
     }
   };
 
@@ -49,6 +51,11 @@ export default function Ladder() {
     const interval = setInterval(loadData, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  const savePlayers = (updatedPlayers: Player[]) => {
+    localStorage.setItem('players', JSON.stringify(updatedPlayers));
+    setPlayers(updatedPlayers);
+  };
 
   const handleProfileSaved = (newPlayer: Player) => {
     setPlayers(prev => {
@@ -59,32 +66,23 @@ export default function Ladder() {
       } else {
         updated.push(newPlayer);
       }
-      localStorage.setItem('players', JSON.stringify(updated));
+      savePlayers(updated);
       return updated;
     });
     setShowProfileModal(false);
   };
 
-  const hasPlayedBefore = (player1Id: string, player2Id: string) => {
+  const hasPlayedBefore = (p1Id: string, p2Id: string) => {
     return matches.some(m => 
-      (m.winnerId === player1Id && m.loserId === player2Id) || 
-      (m.winnerId === player2Id && m.loserId === player1Id)
+      (m.winnerId === p1Id && m.loserId === p2Id) || 
+      (m.winnerId === p2Id && m.loserId === p1Id)
     );
   };
 
   const recordMatch = (winnerId: string, loserId: string, winnerGames: number, loserGames: number) => {
-    if (winnerId === loserId) {
-      alert("❌ You cannot play against yourself");
-      return;
-    }
-    if (winnerGames + loserGames !== 15) {
-      alert("❌ Total games must equal 15");
-      return;
-    }
-    if (hasPlayedBefore(winnerId, loserId)) {
-      alert("❌ You have already played this opponent once. Only one match per pair allowed.");
-      return;
-    }
+    if (winnerId === loserId) return alert("❌ Cannot play yourself");
+    if (winnerGames + loserGames !== 15) return alert("❌ Total games must be 15");
+    if (hasPlayedBefore(winnerId, loserId)) return alert("❌ Already played this opponent once");
 
     const winner = players.find(p => p.id === winnerId);
     const loser = players.find(p => p.id === loserId);
@@ -105,31 +103,17 @@ export default function Ladder() {
     setMatches(updatedMatches);
     localStorage.setItem('matches', JSON.stringify(updatedMatches));
 
-    setPlayers(prev => {
-      const updated = prev.map(player => {
-        if (player.id === winnerId) {
-          return {
-            ...player,
-            points: (player.points || 0) + winnerGames,
-            gamesWon: (player.gamesWon || 0) + winnerGames,
-            gamesLost: (player.gamesLost || 0) + loserGames,
-            matchesPlayed: (player.matchesPlayed || 0) + 1
-          };
-        }
-        if (player.id === loserId) {
-          return {
-            ...player,
-            points: (player.points || 0) + loserGames,
-            gamesWon: (player.gamesWon || 0) + loserGames,
-            gamesLost: (player.gamesLost || 0) + winnerGames,
-            matchesPlayed: (player.matchesPlayed || 0) + 1
-          };
-        }
-        return player;
-      });
-      localStorage.setItem('players', JSON.stringify(updated));
-      return updated;
+    const updatedPlayers = players.map(player => {
+      if (player.id === winnerId) {
+        return { ...player, points: (player.points||0) + winnerGames, gamesWon: (player.gamesWon||0) + winnerGames, gamesLost: (player.gamesLost||0) + loserGames, matchesPlayed: (player.matchesPlayed||0) + 1 };
+      }
+      if (player.id === loserId) {
+        return { ...player, points: (player.points||0) + loserGames, gamesWon: (player.gamesWon||0) + loserGames, gamesLost: (player.gamesLost||0) + winnerGames, matchesPlayed: (player.matchesPlayed||0) + 1 };
+      }
+      return player;
     });
+
+    savePlayers(updatedPlayers);
   };
 
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
@@ -148,17 +132,7 @@ export default function Ladder() {
           <button onClick={() => setShowMatchModal(true)} className="px-6 py-3 bg-emerald-600 text-white rounded-full">+ Record Match</button>
           <a href="/instructions" className="px-6 py-3 bg-blue-600 text-white rounded-full">📋 How to Use</a>
           <a href="/admin" className="px-6 py-3 bg-amber-600 text-white rounded-full">⚙️ Admin</a>
-          <button 
-            onClick={() => { 
-              if (confirm("Logout?")) { 
-                localStorage.removeItem('currentUser'); 
-                window.location.href = '/login'; 
-              } 
-            }} 
-            className="px-6 py-3 bg-red-600 text-white rounded-full"
-          >
-            Logout
-          </button>
+          <button onClick={() => { if (confirm("Logout?")) { localStorage.removeItem('currentUser'); window.location.href = '/login'; } }} className="px-6 py-3 bg-red-600 text-white rounded-full">Logout</button>
         </div>
 
         <div className="bg-white rounded-3xl shadow mb-8">

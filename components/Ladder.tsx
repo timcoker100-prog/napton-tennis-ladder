@@ -47,7 +47,7 @@ export default function Ladder() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 1500);
+    const interval = setInterval(loadData, 1000); // refresh every second
     return () => clearInterval(interval);
   }, []);
 
@@ -104,27 +104,20 @@ export default function Ladder() {
 
     const updatedPlayers = players.map(player => {
       if (player.id === winnerId) {
-        return {
-          ...player,
-          points: (player.points || 0) + winnerGames,
-          gamesWon: (player.gamesWon || 0) + winnerGames,
-          gamesLost: (player.gamesLost || 0) + loserGames,
-          matchesPlayed: (player.matchesPlayed || 0) + 1
-        };
+        return { ...player, points: (player.points||0) + winnerGames, gamesWon: (player.gamesWon||0) + winnerGames, gamesLost: (player.gamesLost||0) + loserGames, matchesPlayed: (player.matchesPlayed||0) + 1 };
       }
       if (player.id === loserId) {
-        return {
-          ...player,
-          points: (player.points || 0) + loserGames,
-          gamesWon: (player.gamesWon || 0) + loserGames,
-          gamesLost: (player.gamesLost || 0) + winnerGames,
-          matchesPlayed: (player.matchesPlayed || 0) + 1
-        };
+        return { ...player, points: (player.points||0) + loserGames, gamesWon: (player.gamesWon||0) + loserGames, gamesLost: (player.gamesLost||0) + winnerGames, matchesPlayed: (player.matchesPlayed||0) + 1 };
       }
       return player;
     });
 
     savePlayers(updatedPlayers);
+  };
+
+  const restoreData = () => {
+    loadData();
+    alert("Data reloaded from storage");
   };
 
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
@@ -139,16 +132,12 @@ export default function Ladder() {
       <div className="max-w-6xl mx-auto p-4">
         <div className="flex flex-wrap gap-3 mb-6">
           <button onClick={loadData} className="px-6 py-3 border rounded-full">🔄 Refresh</button>
+          <button onClick={restoreData} className="px-6 py-3 border border-orange-500 text-orange-600 rounded-full">🔄 Restore Data</button>
           <button onClick={() => setShowProfileModal(true)} className="px-6 py-3 border border-emerald-600 text-emerald-700 rounded-full">👤 My Profile</button>
           <button onClick={() => setShowMatchModal(true)} className="px-6 py-3 bg-emerald-600 text-white rounded-full">+ Record Match</button>
           <a href="/instructions" className="px-6 py-3 bg-blue-600 text-white rounded-full">📋 How to Use</a>
           <a href="/admin" className="px-6 py-3 bg-amber-600 text-white rounded-full">⚙️ Admin</a>
-          <button onClick={() => { 
-            if (confirm("Logout?")) { 
-              localStorage.removeItem('currentUser'); 
-              window.location.href = '/login'; 
-            } 
-          }} className="px-6 py-3 bg-red-600 text-white rounded-full">Logout</button>
+          <button onClick={() => { if (confirm("Logout?")) { localStorage.removeItem('currentUser'); window.location.href = '/login'; } }} className="px-6 py-3 bg-red-600 text-white rounded-full">Logout</button>
         </div>
 
         <div className="bg-white rounded-3xl shadow mb-8">

@@ -143,4 +143,72 @@ export default function Ladder() {
 
       <div className="max-w-6xl mx-auto p-4">
         <div className="flex flex-wrap gap-3 mb-6">
-          <button on
+          <button onClick={loadData} className="px-6 py-3 border rounded-full">🔄 Refresh</button>
+          <button onClick={() => setShowProfileModal(true)} className="px-6 py-3 border border-emerald-600 text-emerald-700 rounded-full">👤 My Profile</button>
+          <button onClick={() => setShowMatchModal(true)} className="px-6 py-3 bg-emerald-600 text-white rounded-full">+ Record Match</button>
+          <a href="/instructions" className="px-6 py-3 bg-blue-600 text-white rounded-full">📋 How to Use</a>
+          <a href="/admin" className="px-6 py-3 bg-amber-600 text-white rounded-full">⚙️ Admin</a>
+          <button 
+            onClick={() => { 
+              if (confirm("Logout?")) { 
+                localStorage.removeItem('currentUser'); 
+                window.location.href = '/login'; 
+              } 
+            }} 
+            className="px-6 py-3 bg-red-600 text-white rounded-full"
+          >
+            Logout
+          </button>
+        </div>
+
+        <div className="bg-white rounded-3xl shadow mb-8">
+          <div className="bg-emerald-700 text-white p-4 font-medium">Current Ladder</div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="p-4 text-left">Rank</th>
+                  <th className="p-4 text-left">Player</th>
+                  <th className="p-4 text-center">Points</th>
+                  <th className="p-4 text-center">Contact</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedPlayers.map((player, i) => (
+                  <tr key={player.id} className="border-b hover:bg-gray-50">
+                    <td className="p-4 font-bold">{i+1}</td>
+                    <td className="p-4">{player.name}</td>
+                    <td className="p-4 text-center font-semibold text-xl text-emerald-700">{player.points}</td>
+                    <td className="p-4">
+                      <div className="flex gap-4 justify-center text-2xl">
+                        {player.email && <a href={`mailto:${player.email}`}>✉️</a>}
+                        {player.whatsapp && <a href={`https://wa.me/${player.whatsapp.replace(/\D/g,'')}`} target="_blank">💬</a>}
+                        {player.phone && <a href={`tel:${player.phone}`}>📞</a>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {matches.length > 0 && (
+          <div className="bg-white rounded-3xl shadow">
+            <div className="bg-emerald-700 text-white p-4 font-medium">Recent Matches</div>
+            <div className="p-4 space-y-2">
+              {matches.slice(0, 10).map(m => (
+                <div key={m.id} className="text-sm">
+                  {m.date} — <strong>{m.winnerName}</strong> beat {m.loserName} ({m.winnerGames}-{m.loserGames})
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} onSaved={handleProfileSaved} />
+      <MatchModal isOpen={showMatchModal} onClose={() => setShowMatchModal(false)} players={players} onMatchRecorded={recordMatch} />
+    </div>
+  );
+}

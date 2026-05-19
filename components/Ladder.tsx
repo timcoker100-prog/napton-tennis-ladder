@@ -47,13 +47,15 @@ export default function Ladder() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 1000); // refresh every second
+    const interval = setInterval(loadData, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const savePlayers = (updated: Player[]) => {
-    localStorage.setItem('players', JSON.stringify(updated));
-    setPlayers(updated);
+  const saveData = (newPlayers: Player[], newMatches?: Match[]) => {
+    localStorage.setItem('players', JSON.stringify(newPlayers));
+    if (newMatches) localStorage.setItem('matches', JSON.stringify(newMatches));
+    setPlayers(newPlayers);
+    if (newMatches) setMatches(newMatches);
   };
 
   const handleProfileSaved = (newPlayer: Player) => {
@@ -65,7 +67,7 @@ export default function Ladder() {
       } else {
         updated.push(newPlayer);
       }
-      savePlayers(updated);
+      saveData(updated);
       return updated;
     });
     setShowProfileModal(false);
@@ -99,9 +101,6 @@ export default function Ladder() {
     };
 
     const updatedMatches = [newMatch, ...matches];
-    setMatches(updatedMatches);
-    localStorage.setItem('matches', JSON.stringify(updatedMatches));
-
     const updatedPlayers = players.map(player => {
       if (player.id === winnerId) {
         return { ...player, points: (player.points||0) + winnerGames, gamesWon: (player.gamesWon||0) + winnerGames, gamesLost: (player.gamesLost||0) + loserGames, matchesPlayed: (player.matchesPlayed||0) + 1 };
@@ -112,12 +111,7 @@ export default function Ladder() {
       return player;
     });
 
-    savePlayers(updatedPlayers);
-  };
-
-  const restoreData = () => {
-    loadData();
-    alert("Data reloaded from storage");
+    saveData(updatedPlayers, updatedMatches);
   };
 
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
@@ -132,7 +126,7 @@ export default function Ladder() {
       <div className="max-w-6xl mx-auto p-4">
         <div className="flex flex-wrap gap-3 mb-6">
           <button onClick={loadData} className="px-6 py-3 border rounded-full">🔄 Refresh</button>
-          <button onClick={restoreData} className="px-6 py-3 border border-orange-500 text-orange-600 rounded-full">🔄 Restore Data</button>
+          <button onClick={loadData} className="px-6 py-3 border border-orange-500 text-orange-600 rounded-full">🔄 Restore Data</button>
           <button onClick={() => setShowProfileModal(true)} className="px-6 py-3 border border-emerald-600 text-emerald-700 rounded-full">👤 My Profile</button>
           <button onClick={() => setShowMatchModal(true)} className="px-6 py-3 bg-emerald-600 text-white rounded-full">+ Record Match</button>
           <a href="/instructions" className="px-6 py-3 bg-blue-600 text-white rounded-full">📋 How to Use</a>

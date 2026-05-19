@@ -35,9 +35,15 @@ export default function Ladder() {
     try {
       const savedPlayers = localStorage.getItem('players');
       const savedMatches = localStorage.getItem('matches');
-      
-      if (savedPlayers) setPlayers(JSON.parse(savedPlayers));
-      if (savedMatches) setMatches(JSON.parse(savedMatches));
+
+      if (savedPlayers) {
+        const parsed = JSON.parse(savedPlayers);
+        setPlayers(Array.isArray(parsed) ? parsed : []);
+      }
+      if (savedMatches) {
+        const parsed = JSON.parse(savedMatches);
+        setMatches(Array.isArray(parsed) ? parsed : []);
+      }
     } catch (e) {
       console.error("Error loading data:", e);
     }
@@ -45,9 +51,14 @@ export default function Ladder() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 2000);
+    const interval = setInterval(loadData, 1500); // Auto refresh every 1.5s
     return () => clearInterval(interval);
   }, []);
+
+  const savePlayers = (updatedPlayers: Player[]) => {
+    localStorage.setItem('players', JSON.stringify(updatedPlayers));
+    setPlayers(updatedPlayers);
+  };
 
   const handleProfileSaved = (newPlayer: Player) => {
     setPlayers(prev => {
@@ -58,16 +69,18 @@ export default function Ladder() {
       } else {
         updated.push(newPlayer);
       }
-      localStorage.setItem('players', JSON.stringify(updated));
+      savePlayers(updated);
       return updated;
     });
     setShowProfileModal(false);
   };
 
   const recordMatch = (winnerId: string, loserId: string, winnerGames: number, loserGames: number) => {
+    if (winnerGames + loserGames !== 15) return;
+
     const winner = players.find(p => p.id === winnerId);
     const loser = players.find(p => p.id === loserId);
-    if (!winner || !loser || winnerGames + loserGames !== 15) return;
+    if (!winner || !loser) return;
 
     const newMatch: Match = {
       id: Date.now().toString(),
@@ -78,16 +91,18 @@ export default function Ladder() {
       date: new Date().toLocaleDateString()
     };
 
+    // Update matches
     const updatedMatches = [newMatch, ...matches];
     setMatches(updatedMatches);
     localStorage.setItem('matches', JSON.stringify(updatedMatches));
 
+    // Update players
     setPlayers(prev => {
       const updated = prev.map(player => {
         if (player.id === winnerId) {
           return {
             ...player,
-            points: player.points + winnerGames,
+            points: (player.points || 0) + winnerGames,
             gamesWon: (player.gamesWon || 0) + winnerGames,
             gamesLost: (player.gamesLost || 0) + loserGames,
             matchesPlayed: (player.matchesPlayed || 0) + 1
@@ -96,7 +111,7 @@ export default function Ladder() {
         if (player.id === loserId) {
           return {
             ...player,
-            points: player.points + loserGames,
+            points: (player.points || 0) + loserGames,
             gamesWon: (player.gamesWon || 0) + loserGames,
             gamesLost: (player.gamesLost || 0) + winnerGames,
             matchesPlayed: (player.matchesPlayed || 0) + 1
@@ -104,7 +119,7 @@ export default function Ladder() {
         }
         return player;
       });
-      localStorage.setItem('players', JSON.stringify(updated));
+      savePlayers(updated);
       return updated;
     });
   };
@@ -127,20 +142,9 @@ export default function Ladder() {
           <button onClick={() => setShowMatchModal(true)} className="px-6 py-3 bg-emerald-600 text-white rounded-full">+ Record Match</button>
           <a href="/instructions" className="px-6 py-3 bg-blue-600 text-white rounded-full">📋 How to Use</a>
           <a href="/admin" className="px-6 py-3 bg-amber-600 text-white rounded-full">⚙️ Admin</a>
-          <button 
-            onClick={() => { 
-              if (confirm("Logout?")) { 
-                localStorage.removeItem('currentUser'); 
-                window.location.href = '/login'; 
-              } 
-            }} 
-            className="px-6 py-3 bg-red-600 text-white rounded-full"
-          >
-            Logout
-          </button>
+          <button onClick={() => { if (confirm("Logout?")) { localStorage.removeItem('currentUser'); window.location.href = '/login'; } }} className="px-6 py-3 bg-red-600 text-white rounded-full">Logout</button>
         </div>
 
-        {/* Current Ladder */}
         <div className="bg-white rounded-3xl shadow overflow-hidden mb-8">
           <div className="bg-emerald-700 text-white p-4 font-medium">Current Ladder</div>
           <div className="overflow-x-auto">
@@ -175,7 +179,6 @@ export default function Ladder() {
           </div>
         </div>
 
-        {/* Recent Matches */}
         {matches.length > 0 && (
           <div className="bg-white rounded-3xl shadow overflow-hidden">
             <div className="bg-emerald-700 text-white p-4 font-medium">Recent Matches</div>
@@ -190,17 +193,8 @@ export default function Ladder() {
         )}
       </div>
 
-      <ProfileModal 
-        isOpen={showProfileModal} 
-        onClose={() => setShowProfileModal(false)} 
-        onSaved={handleProfileSaved} 
-      />
-      <MatchModal 
-        isOpen={showMatchModal} 
-        onClose={() => setShowMatchModal(false)} 
-        players={players} 
-        onMatchRecorded={recordMatch} 
-      />
+      <ProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} onSaved={handleProfileSaved} />
+      <MatchModal isOpen={showMatchModal} onClose={() => setShowMatchModal(false)} players={players} onMatchRecorded={recordMatch} />
     </div>
   );
 }

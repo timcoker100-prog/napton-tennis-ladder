@@ -33,7 +33,6 @@ export default function Ladder() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
 
-  // Load data on mount and every 2 seconds
   const loadData = () => {
     try {
       const savedPlayers = localStorage.getItem('players');
@@ -48,13 +47,13 @@ export default function Ladder() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 2000);
+    const interval = setInterval(loadData, 1500);
     return () => clearInterval(interval);
   }, []);
 
-  const savePlayers = (updatedPlayers: Player[]) => {
-    localStorage.setItem('players', JSON.stringify(updatedPlayers));
-    setPlayers(updatedPlayers);
+  const savePlayers = (updated: Player[]) => {
+    localStorage.setItem('players', JSON.stringify(updated));
+    setPlayers(updated);
   };
 
   const handleProfileSaved = (newPlayer: Player) => {
@@ -105,10 +104,22 @@ export default function Ladder() {
 
     const updatedPlayers = players.map(player => {
       if (player.id === winnerId) {
-        return { ...player, points: (player.points||0) + winnerGames, gamesWon: (player.gamesWon||0) + winnerGames, gamesLost: (player.gamesLost||0) + loserGames, matchesPlayed: (player.matchesPlayed||0) + 1 };
+        return {
+          ...player,
+          points: (player.points || 0) + winnerGames,
+          gamesWon: (player.gamesWon || 0) + winnerGames,
+          gamesLost: (player.gamesLost || 0) + loserGames,
+          matchesPlayed: (player.matchesPlayed || 0) + 1
+        };
       }
       if (player.id === loserId) {
-        return { ...player, points: (player.points||0) + loserGames, gamesWon: (player.gamesWon||0) + loserGames, gamesLost: (player.gamesLost||0) + winnerGames, matchesPlayed: (player.matchesPlayed||0) + 1 };
+        return {
+          ...player,
+          points: (player.points || 0) + loserGames,
+          gamesWon: (player.gamesWon || 0) + loserGames,
+          gamesLost: (player.gamesLost || 0) + winnerGames,
+          matchesPlayed: (player.matchesPlayed || 0) + 1
+        };
       }
       return player;
     });
@@ -132,7 +143,12 @@ export default function Ladder() {
           <button onClick={() => setShowMatchModal(true)} className="px-6 py-3 bg-emerald-600 text-white rounded-full">+ Record Match</button>
           <a href="/instructions" className="px-6 py-3 bg-blue-600 text-white rounded-full">📋 How to Use</a>
           <a href="/admin" className="px-6 py-3 bg-amber-600 text-white rounded-full">⚙️ Admin</a>
-          <button onClick={() => { if (confirm("Logout?")) { localStorage.removeItem('currentUser'); window.location.href = '/login'; } }} className="px-6 py-3 bg-red-600 text-white rounded-full">Logout</button>
+          <button onClick={() => { 
+            if (confirm("Logout?")) { 
+              localStorage.removeItem('currentUser'); 
+              window.location.href = '/login'; 
+            } 
+          }} className="px-6 py-3 bg-red-600 text-white rounded-full">Logout</button>
         </div>
 
         <div className="bg-white rounded-3xl shadow mb-8">

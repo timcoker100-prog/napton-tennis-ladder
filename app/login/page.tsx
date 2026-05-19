@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const SECRET_CODE = "NAPTON2026";
+const SECRET_CODE = "N&P2026";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,7 +25,6 @@ export default function LoginPage() {
     const trimmedEmail = email.trim().toLowerCase();
     const playerName = name.trim() || "Unnamed Player";
 
-    // Check for duplicate email
     const existingPlayers = JSON.parse(localStorage.getItem('players') || '[]');
     if (isRegisterMode && existingPlayers.some((p: any) => p.email === trimmedEmail)) {
       setError("❌ This email is already registered. Please use Login.");
@@ -45,14 +44,11 @@ export default function LoginPage() {
       matchesPlayed: 0,
     };
 
-    // Save to players list
     const updatedPlayers = isRegisterMode 
       ? [...existingPlayers, newPlayer] 
       : existingPlayers.map((p: any) => p.email === trimmedEmail ? newPlayer : p);
 
     localStorage.setItem('players', JSON.stringify(updatedPlayers));
-
-    // Save current user
     localStorage.setItem('currentUser', JSON.stringify(newPlayer));
 
     router.push('/ladder');
@@ -91,7 +87,7 @@ export default function LoginPage() {
         </button>
 
         <p className="text-center text-xs text-gray-400 mt-8">
-          Club members only • Ask admin for the code
+          Club members only • Contact timcoker100@gmail.com for the code
         </p>
       </div>
     </div>

@@ -29,23 +29,25 @@ export default function LoginPage() {
     }
 
     try {
-      const { error } = await supabase.from('players').insert({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        phone: phone.trim() || null,
-        whatsapp: whatsapp.trim() || null,
-        points: 0
-      });
+      const { error } = await supabase
+        .from('players')
+        .insert({
+          name: name.trim(),
+          email: email.trim().toLowerCase(),
+          phone: phone.trim() || null,
+          whatsapp: whatsapp.trim() || null,
+          points: 0
+        });
 
       if (error) {
         setMessage("❌ " + error.message);
       } else {
-        setMessage("✅ Success! Redirecting...");
-        setTimeout(() => router.push('/ladder'), 1200);
+        setMessage("✅ Registration successful! Redirecting...");
+        setTimeout(() => router.push('/ladder'), 1500);
       }
     } catch (err: any) {
-      console.error(err);
-      setMessage("❌ Connection error. Please check your internet and try again.");
+      console.error("Registration error:", err);
+      setMessage("❌ Connection failed. Please check your internet or try again later.");
     }
 
     setLoading(false);
@@ -64,7 +66,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="Dr Tim Coker" />
+            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="Tim Coker" />
           </div>
 
           <div>
@@ -95,7 +97,11 @@ export default function LoginPage() {
             <p className="text-xs text-gray-500 mt-2">Contact timcoker100@gmail.com for the code</p>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-4 rounded-2xl text-lg">
+          <button 
+            type="submit" 
+            disabled={loading} 
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-4 rounded-2xl text-lg transition disabled:opacity-70"
+          >
             {loading ? "Registering..." : "Join the Ladder"}
           </button>
         </form>

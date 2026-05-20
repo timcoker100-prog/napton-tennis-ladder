@@ -11,43 +11,52 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
-  const [isLogin, setIsLogin] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code !== SECRET_CODE) {
-      alert("❌ Incorrect code. Please contact timcoker100@gmail.com for the code.");
-      return;
-    }
-
+    setMessage('');
     setLoading(true);
 
-    // Check if email already exists
-    const { data: existing } = await supabase
-      .from('players')
-      .select('email')
-      .eq('email', email.trim().toLowerCase())
-      .single();
-
-    if (existing) {
-      alert("✅ You are already registered! Redirecting to ladder...");
-      router.push('/ladder');
+    if (code !== SECRET_CODE) {
+      setMessage("❌ Incorrect code. Contact timcoker100@gmail.com");
+      setLoading(false);
       return;
     }
 
-    // Create new player
-    const { error } = await supabase.from('players').insert({
-      name: name.trim(),
-      email: email.trim().toLowerCase(),
-      points: 0
-    });
+    try {
+      // Check if email already exists
+      const { data: existing } = await supabase
+        .from('players')
+        .select('email')
+        .eq('email', email.trim().toLowerCase())
+        .single();
 
-    if (error) {
-      alert("Error: " + error.message);
-    } else {
-      alert("✅ Registration successful! Welcome to the ladder.");
-      router.push('/ladder');
+      if (existing) {
+        setMessage("✅ You are already registered! Going to ladder...");
+        router.push('/ladder');
+        return;
+      }
+
+      // Create new player
+      const { error } = await supabase.from('players').insert({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        points: 0,
+        phone: null,
+        whatsapp: null
+      });
+
+      if (error) {
+        console.error(error);
+        setMessage("❌ Registration failed: " + error.message);
+      } else {
+        setMessage("✅ Registration successful! Welcome!");
+        setTimeout(() => router.push('/ladder'), 1500);
+      }
+    } catch (err: any) {
+      setMessage("❌ Something went wrong: " + err.message);
     }
 
     setLoading(false);
@@ -112,8 +121,12 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {message && (
+          <p className="mt-4 text-center font-medium text-red-600">{message}</p>
+        )}
+
         <p className="text-center text-sm text-gray-500 mt-8">
-          Already registered? Just log in with the same details above.
+          Already registered? Just use the same details above.
         </p>
       </div>
     </div>

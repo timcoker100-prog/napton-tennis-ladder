@@ -23,12 +23,27 @@ export default function LoginPage() {
     setLoading(true);
 
     if (code !== SECRET_CODE) {
-      setMessage("❌ Incorrect secret code");
+      setMessage("❌ Incorrect secret code. Contact timcoker100@gmail.com");
       setLoading(false);
       return;
     }
 
     try {
+      // Check if user already exists
+      const { data: existing } = await supabase
+        .from('players')
+        .select('name, email')
+        .eq('email', email.trim().toLowerCase())
+        .single();
+
+      if (existing) {
+        setMessage("✅ Welcome back! Redirecting to ladder...");
+        setTimeout(() => router.push('/ladder'), 1200);
+        setLoading(false);
+        return;
+      }
+
+      // New user registration
       const { error } = await supabase.from('players').insert({
         name: name.trim(),
         email: email.trim().toLowerCase(),
@@ -40,7 +55,7 @@ export default function LoginPage() {
       if (error) {
         setMessage("❌ " + error.message);
       } else {
-        setMessage("✅ Registration successful! Redirecting...");
+        setMessage("✅ Registration successful! Welcome to the ladder.");
         setTimeout(() => router.push('/ladder'), 1500);
       }
     } catch (err: any) {
@@ -63,73 +78,40 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input 
-              type="text" 
-              required 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
-              className="w-full border border-gray-300 rounded-2xl px-5 py-4" 
-              placeholder="Enter your full name" 
-            />
+            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="Enter your full name" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input 
-              type="email" 
-              required 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              className="w-full border border-gray-300 rounded-2xl px-5 py-4" 
-              placeholder="your@email.com" 
-            />
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="your@email.com" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (optional)</label>
-            <input 
-              type="tel" 
-              value={phone} 
-              onChange={(e) => setPhone(e.target.value)} 
-              className="w-full border border-gray-300 rounded-2xl px-5 py-4" 
-              placeholder="07927 315429" 
-            />
+            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="07927 315429" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number (optional)</label>
-            <input 
-              type="tel" 
-              value={whatsapp} 
-              onChange={(e) => setWhatsapp(e.target.value)} 
-              className="w-full border border-gray-300 rounded-2xl px-5 py-4" 
-              placeholder="07927 315456" 
-            />
+            <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="07927 315456" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Secret Code</label>
-            <input 
-              type="password" 
-              required 
-              value={code} 
-              onChange={(e) => setCode(e.target.value)} 
-              className="w-full border border-gray-300 rounded-2xl px-5 py-4" 
-              placeholder="Enter secret code" 
-            />
+            <input type="password" required value={code} onChange={(e) => setCode(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="Enter secret code" />
             <p className="text-xs text-gray-500 mt-2">Contact timcoker100@gmail.com for the code</p>
           </div>
 
-          <button 
-            type="submit" 
-            disabled={loading} 
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-4 rounded-2xl text-lg transition disabled:opacity-70"
-          >
-            {loading ? "Registering..." : "Join the Ladder"}
+          <button type="submit" disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-4 rounded-2xl text-lg transition disabled:opacity-70">
+            {loading ? "Processing..." : "Join the Ladder"}
           </button>
         </form>
 
         {message && <p className="mt-4 text-center font-medium text-red-600">{message}</p>}
+
+        <p className="text-center text-sm text-gray-500 mt-8">
+          Already registered? Just enter your email and secret code above.
+        </p>
       </div>
     </div>
   );

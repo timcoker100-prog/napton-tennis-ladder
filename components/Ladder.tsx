@@ -12,31 +12,23 @@ interface Player {
   points: number;
 }
 
-interface Match {
-  id?: string;           // made optional
-  winner_name: string;
-  loser_name: string;
-}
-
 const ADMIN_CODE = 'ADMIN2026';
 
 export default function Ladder() {
   const [players, setPlayers] = useState<Player[]>([]);
-  const [matches, setMatches] = useState<Match[]>([]);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [showHowToUse, setShowHowToUse] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
 
-  const [selectedOpponent, setSelectedOpponent] = useState('');
-  const [winnerGames, setWinnerGames] = useState(0);
-  const [loserGames, setLoserGames] = useState(0);
+  // Record Match Form
+  const [player1, setPlayer1] = useState('');
+  const [player2, setPlayer2] = useState('');
+  const [player1Games, setPlayer1Games] = useState(0);
+  const [player2Games, setPlayer2Games] = useState(0);
 
   const loadData = async () => {
-    const { data: pData } = await supabase.from('players').select('*');
-    const { data: mData } = await supabase.from('matches').select('winner_name, loser_name');
-    
-    setPlayers(pData || []);
-    setMatches(mData || []);
+    const { data } = await supabase.from('players').select('*');
+    setPlayers(data || []);
   };
 
   useEffect(() => {
@@ -47,21 +39,18 @@ export default function Ladder() {
 
   const handleAdmin = () => {
     const code = prompt("Enter Admin Code:");
-    if (code === ADMIN_CODE) {
-      setShowAdminModal(true);
-    } else if (code) {
-      alert("❌ Wrong admin code");
-    }
+    if (code === ADMIN_CODE) setShowAdminModal(true);
+    else if (code) alert("❌ Wrong admin code");
   };
 
   const resetAllData = async () => {
-    if (!confirm("⚠️ Clear ALL players and matches? This cannot be undone!")) return;
+    if (!confirm("⚠️ Delete ALL players and matches? This cannot be undone!")) return;
     
-    await supabase.from('players').delete().neq('id', '0');
     await supabase.from('matches').delete().neq('id', '0');
+    await supabase.from('players').delete().neq('id', '0');
     
     loadData();
-    alert("✅ Ladder has been fully reset");
+    alert("✅ Ladder has been completely reset");
   };
 
   const removePlayer = async (email: string) => {
@@ -71,48 +60,33 @@ export default function Ladder() {
   };
 
   const recordMatch = async () => {
-    if (!selectedOpponent || winnerGames + loserGames !== 15) {
-      alert("Total games must be exactly 15");
+    if (!player1 || !player2 || player1 === player2 || player1Games + player2Games !== 15) {
+      alert("Please select two different players and make sure total games = 15");
       return;
     }
 
-    const winnerEmail = prompt("Enter YOUR email to record this match:");
-    if (!winnerEmail) return;
+    const p1 = players.find(p => p.name === player1);
+    const p2 = players.find(p => p.name === player2);
 
-    const winner = players.find(p => p.email.toLowerCase() === winnerEmail.toLowerCase());
-    const loser = players.find(p => p.name === selectedOpponent);
-
-    if (!winner || !loser) {
-      alert("Player not found. Make sure you entered the correct email.");
-      return;
-    }
-
-    const alreadyPlayed = matches.some(m =>
-      (m.winner_name === winner.name && m.loser_name === loser.name) ||
-      (m.winner_name === loser.name && m.loser_name === winner.name)
-    );
-
-    if (alreadyPlayed) {
-      alert("You have already played this opponent!");
-      return;
-    }
+    if (!p1 || !p2) return alert("Player not found");
 
     const { error } = await supabase.from('matches').insert({
-      winner_name: winner.name,
-      loser_name: loser.name,
-      winner_games: winnerGames,
-      loser_games: loserGames,
+      winner_name: player1Games > player2Games ? p1.name : p2.name,
+      loser_name: player1Games > player2Games ? p2.name : p1.name,
+      winner_games: Math.max(player1Games, player2Games),
+      loser_games: Math.min(player1Games, player2Games),
       date: new Date().toISOString().split('T')[0]
     });
 
     if (error) {
-      alert("Error recording match: " + error.message);
+      alert("Error: " + error.message);
     } else {
       alert("✅ Match recorded successfully!");
       setShowMatchModal(false);
-      setSelectedOpponent('');
-      setWinnerGames(0);
-      setLoserGames(0);
+      setPlayer1('');
+      setPlayer2('');
+      setPlayer1Games(0);
+      setPlayer2Games(0);
       loadData();
     }
   };
@@ -135,7 +109,7 @@ export default function Ladder() {
           <button onClick={() => window.location.href = '/login'} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl">Logout</button>
         </div>
 
-        {/* Current Ladder */}
+        {/* Ladder Table */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-emerald-700 text-white p-6">
             <h2 className="text-3xl font-bold">Current Ladder</h2>
@@ -194,31 +168,36 @@ export default function Ladder() {
         </div>
       )}
 
-      {/* Record Match Modal */}
+      {/* Record Match Modal - Simple & Clear */}
       {showMatchModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full">
             <h3 className="text-2xl font-bold mb-6">Record New Match</h3>
             
-            <select 
-              value={selectedOpponent} 
-              onChange={(e) => setSelectedOpponent(e.target.value)} 
-              className="w-full border rounded-xl px-4 py-3 mb-6"
-            >
-              <option value="">Select Opponent</option>
-              {players.map(p => (
-                <option key={p.email} value={p.name}>{p.name}</option>
-              ))}
-            </select>
+            <div className="mb-4">
+              <label className="block text-sm mb-1">Player 1</label>
+              <select value={player1} onChange={(e) => setPlayer1(e.target.value)} className="w-full border rounded-xl px-4 py-3">
+                <option value="">Select Player 1</option>
+                {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm mb-1">Player 2</label>
+              <select value={player2} onChange={(e) => setPlayer2(e.target.value)} className="w-full border rounded-xl px-4 py-3">
+                <option value="">Select Player 2</option>
+                {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
+            </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
-                <p className="text-sm mb-2">You (Games Won)</p>
-                <input type="number" min="0" max="15" value={winnerGames} onChange={(e) => setWinnerGames(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center text-xl" />
+                <p className="text-sm mb-1">{player1 || "Player 1"} Games Won</p>
+                <input type="number" min="0" max="15" value={player1Games} onChange={(e) => setPlayer1Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center text-xl" />
               </div>
               <div>
-                <p className="text-sm mb-2">Opponent (Games Won)</p>
-                <input type="number" min="0" max="15" value={loserGames} onChange={(e) => setLoserGames(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center text-xl" />
+                <p className="text-sm mb-1">{player2 || "Player 2"} Games Won</p>
+                <input type="number" min="0" max="15" value={player2Games} onChange={(e) => setPlayer2Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center text-xl" />
               </div>
             </div>
 

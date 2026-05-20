@@ -12,22 +12,31 @@ interface Player {
   points: number;
 }
 
+interface Match {
+  id: string;
+  winner_name: string;
+  loser_name: string;
+}
+
 const ADMIN_CODE = 'ADMIN2026';
 
 export default function Ladder() {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [showHowToUse, setShowHowToUse] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
 
-  // Match form
   const [selectedOpponent, setSelectedOpponent] = useState('');
   const [winnerGames, setWinnerGames] = useState(0);
   const [loserGames, setLoserGames] = useState(0);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
 
   const loadData = async () => {
-    const { data } = await supabase.from('players').select('*');
-    setPlayers(data || []);
+    const { data: pData } = await supabase.from('players').select('*');
+    const { data: mData } = await supabase.from('matches').select('winner_name, loser_name');
+    setPlayers(pData || []);
+    setMatches(mData || []);
   };
 
   useEffect(() => {
@@ -38,25 +47,18 @@ export default function Ladder() {
 
   const handleAdmin = () => {
     const code = prompt("Enter Admin Code:");
-    if (code === ADMIN_CODE) {
-      setShowAdminModal(true);
-    } else if (code) {
-      alert("❌ Wrong admin code");
-    }
+    if (code === ADMIN_CODE) setShowAdminModal(true);
+    else if (code) alert("❌ Wrong admin code");
   };
 
   const resetAllData = async () => {
-    if (!confirm("⚠️ Clear ALL players and matches? This cannot be undone!")) return;
+    if (!confirm("⚠️ Delete ALL players and matches? This cannot be undone!")) return;
     
-    const { error: pError } = await supabase.from('players').delete().neq('id', '0');
-    const { error: mError } = await supabase.from('matches').delete().neq('id', '0');
-
-    if (pError || mError) {
-      alert("Error resetting data");
-    } else {
-      alert("✅ Ladder has been fully reset");
-      loadData();
-    }
+    await supabase.from('matches').delete().neq('id', '0');
+    await supabase.from('players').delete().neq('id', '0');
+    
+    loadData();
+    alert("✅ Ladder has been completely reset");
   };
 
   const removePlayer = async (email: string) => {
@@ -71,14 +73,22 @@ export default function Ladder() {
       return;
     }
 
-    const winnerEmail = prompt("Enter YOUR email to record this match:");
-    if (!winnerEmail) return;
-
-    const winner = players.find(p => p.email.toLowerCase() === winnerEmail.toLowerCase());
+    const winner = players.find(p => p.email === currentUserEmail);
     const loser = players.find(p => p.name === selectedOpponent);
 
     if (!winner || !loser) {
-      alert("Player not found");
+      alert("Player not found. Make sure you are logged in.");
+      return;
+    }
+
+    // Check if they already played
+    const alreadyPlayed = matches.some(m =>
+      (m.winner_name === winner.name && m.loser_name === loser.name) ||
+      (m.winner_name === loser.name && m.loser_name === winner.name)
+    );
+
+    if (alreadyPlayed) {
+      alert("You have already played this opponent!");
       return;
     }
 
@@ -114,7 +124,6 @@ export default function Ladder() {
 
         <div className="flex flex-wrap gap-3 justify-center mb-8">
           <button onClick={loadData} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl">🔄 Refresh</button>
-          <button onClick={() => alert("My Profile - coming soon")} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl">👤 My Profile</button>
           <button onClick={() => setShowMatchModal(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl">🎾 Record Match</button>
           <button onClick={() => setShowHowToUse(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl">📖 How to Use</button>
           <button onClick={handleAdmin} className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl">🔧 Admin</button>
@@ -186,11 +195,17 @@ export default function Ladder() {
           <div className="bg-white rounded-2xl p-8 max-w-md w-full">
             <h3 className="text-2xl font-bold mb-6">Record New Match</h3>
             
-            <select value={selectedOpponent} onChange={(e) => setSelectedOpponent(e.target.value)} className="w-full border rounded-xl px-4 py-3 mb-6">
+            <select 
+              value={selectedOpponent} 
+              onChange={(e) => setSelectedOpponent(e.target.value)} 
+              className="w-full border rounded-xl px-4 py-3 mb-6"
+            >
               <option value="">Select Opponent</option>
-              {players.map(p => (
-                <option key={p.email} value={p.name}>{p.name}</option>
-              ))}
+              {players
+                .filter(p => p.email !== currentUserEmail)
+                .map(p => (
+                  <option key={p.email} value={p.name}>{p.name}</option>
+                ))}
             </select>
 
             <div className="grid grid-cols-2 gap-4 mb-6">

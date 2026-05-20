@@ -29,15 +29,13 @@ export default function LoginPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('players')
-        .insert({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          phone: phone.trim() || null,
-          whatsapp: whatsapp.trim() || null,
-          points: 0
-        });
+      const { error } = await supabase.from('players').insert({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        phone: phone.trim() || null,
+        whatsapp: whatsapp.trim() || null,
+        points: 0
+      });
 
       if (error) {
         setMessage("❌ " + error.message);
@@ -46,8 +44,7 @@ export default function LoginPage() {
         setTimeout(() => router.push('/ladder'), 1500);
       }
     } catch (err: any) {
-      console.error("Registration error:", err);
-      setMessage("❌ Connection failed. Please check your internet or try again later.");
+      setMessage("❌ Connection error. Please try again.");
     }
 
     setLoading(false);
@@ -66,22 +63,48 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="Tim Coker" />
+            <input 
+              type="text" 
+              required 
+              value={name} 
+              onChange={(e) => setName(e.target.value)} 
+              className="w-full border border-gray-300 rounded-2xl px-5 py-4" 
+              placeholder="Enter your full name" 
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="timcoker100@gmail.com" />
+            <input 
+              type="email" 
+              required 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              className="w-full border border-gray-300 rounded-2xl px-5 py-4" 
+              placeholder="your@email.com" 
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (optional)</label>
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="07927 315429" />
+            <input 
+              type="tel" 
+              value={phone} 
+              onChange={(e) => setPhone(e.target.value)} 
+              className="w-full border border-gray-300 rounded-2xl px-5 py-4" 
+              placeholder="07927 315429" 
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number (optional)</label>
-            <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="07927 315456" />
+            <input 
+              type="tel" 
+              value={whatsapp} 
+              onChange={(e) => setWhatsapp(e.target.value)} 
+              className="w-full border border-gray-300 rounded-2xl px-5 py-4" 
+              placeholder="07927 315456" 
+            />
           </div>
 
           <div>

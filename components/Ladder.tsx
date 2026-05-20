@@ -38,8 +38,16 @@ export default function Ladder() {
   const loadData = async () => {
     const { data: pData } = await supabase.from('players').select('*');
     const { data: mData } = await supabase.from('matches').select('*');
+
     setPlayers(pData || []);
-    setMatches(mData || []);
+
+    // Only show matches where BOTH players are still on the ladder
+    const currentNames = new Set((pData || []).map(p => p.name));
+    const validMatches = (mData || []).filter(m => 
+      currentNames.has(m.winner_name) && currentNames.has(m.loser_name)
+    );
+
+    setMatches(validMatches);
   };
 
   useEffect(() => {
@@ -55,15 +63,18 @@ export default function Ladder() {
   };
 
   const resetAllData = async () => {
-    if (!confirm("Clear ALL data?")) return;
+    if (!confirm("⚠️ Delete ALL players and ALL matches? This cannot be undone!")) return;
+
     await supabase.from('matches').delete().neq('id', '0');
     await supabase.from('players').delete().neq('id', '0');
+
     loadData();
-    alert("✅ Ladder reset");
+    alert("✅ Ladder has been completely reset");
   };
 
   const removePlayer = async (email: string) => {
-    if (!confirm("Remove player and their matches?")) return;
+    if (!confirm("Remove this player and all their matches?")) return;
+
     const player = players.find(p => p.email === email);
     if (player) {
       await supabase.from('matches').delete().or(`winner_name.eq.${player.name},loser_name.eq.${player.name}`);
@@ -158,7 +169,7 @@ export default function Ladder() {
           </div>
         </div>
 
-        {/* Recent Matches */}
+        {/* Recent Matches - Only current players */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-emerald-700 text-white p-6">
             <h2 className="text-3xl font-bold">Recent Matches</h2>
@@ -188,7 +199,9 @@ export default function Ladder() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
             <h3 className="text-2xl font-bold text-red-600 mb-6">Admin Panel</h3>
-            <button onClick={resetAllData} className="w-full bg-red-600 text-white py-4 rounded-xl mb-6 font-medium">Clear All Data (Reset Ladder)</button>
+            <button onClick={resetAllData} className="w-full bg-red-600 text-white py-4 rounded-xl mb-6 font-medium">
+              ❌ Clear All Data (Reset Ladder)
+            </button>
             {players.map(p => (
               <div key={p.email} className="flex justify-between py-3 border-b">
                 <span>{p.name}</span>
@@ -233,27 +246,6 @@ export default function Ladder() {
 
             <button onClick={recordMatch} className="w-full bg-emerald-600 text-white py-4 rounded-xl">Record Match</button>
             <button onClick={() => setShowMatchModal(false)} className="w-full mt-3 text-gray-500">Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* How to Use Modal */}
-      {showHowToUse && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
-            <h3 className="text-2xl font-bold mb-6">How to Use the Ladder</h3>
-            <div className="space-y-4 text-gray-700">
-              <p>• A match is <strong>15 games total</strong> (not sets)</p>
-              <p>• Award <strong>1 point per game won</strong></p>
-              <p>• You can only play each opponent <strong>once</strong></p>
-              <p>• Use "Record Match" to enter results</p>
-            </div>
-            <button 
-              onClick={() => setShowHowToUse(false)} 
-              className="mt-8 w-full bg-emerald-600 text-white py-3 rounded-xl font-medium"
-            >
-              Close
-            </button>
           </div>
         </div>
       )}

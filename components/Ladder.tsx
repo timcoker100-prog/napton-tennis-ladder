@@ -40,8 +40,8 @@ export default function Ladder() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   const [selectedOpponent, setSelectedOpponent] = useState<Player | null>(null);
-  const [winnerGames, setWinnerGames] = useState(8);
-  const [loserGames, setLoserGames] = useState(7);
+  const [winnerGames, setWinnerGames] = useState(0);   // Changed to 0
+  const [loserGames, setLoserGames] = useState(0);     // Changed to 0
   const [loading, setLoading] = useState(false);
 
   const [profileName, setProfileName] = useState('');
@@ -70,7 +70,6 @@ export default function Ladder() {
     }
   }, [players]);
 
-  // Check if these two players have already played
   const hasPlayedBefore = (player1Id: string, player2Id: string) => {
     return matches.some(m => 
       (m.winner_id === player1Id && m.loser_id === player2Id) ||
@@ -79,8 +78,7 @@ export default function Ladder() {
   };
 
   const recordMatch = async () => {
-    if (!selectedOpponent) return;
-    if (winnerGames + loserGames !== 15) {
+    if (!selectedOpponent || winnerGames + loserGames !== 15) {
       alert("Total games must be exactly 15");
       return;
     }
@@ -114,8 +112,8 @@ export default function Ladder() {
 
     setShowMatchModal(false);
     setSelectedOpponent(null);
-    setWinnerGames(8);
-    setLoserGames(7);
+    setWinnerGames(0);
+    setLoserGames(0);
     await loadData();
     setLoading(false);
   };
@@ -179,7 +177,7 @@ export default function Ladder() {
         <button onClick={() => { alert("Logged out"); window.location.href = "/login"; }} className="flex items-center gap-2 bg-red-600 text-white px-5 py-2.5 rounded-3xl hover:bg-red-700">Logout</button>
       </div>
 
-      {/* Ladder Table */}
+      {/* Ladder Table + Recent Matches (unchanged) */}
       <div className="max-w-5xl mx-auto px-4">
         <div className="bg-white rounded-3xl shadow overflow-hidden">
           <div className="bg-emerald-700 text-white px-6 py-4 font-semibold text-lg">Current Ladder</div>
@@ -226,7 +224,6 @@ export default function Ladder() {
         )}
       </div>
 
-      {/* All Modals (Profile, Match, How to Use, Admin) */}
       {/* Profile Modal */}
       {showProfileModal && currentUser && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -243,7 +240,7 @@ export default function Ladder() {
         </div>
       )}
 
-      {/* Record Match Modal */}
+      {/* Record Match Modal - now starts at 0-0 */}
       {showMatchModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full">
@@ -260,8 +257,14 @@ export default function Ladder() {
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <div><label>Your Games Won</label><input type="number" value={winnerGames} onChange={(e) => setWinnerGames(Number(e.target.value))} className="w-full p-4 border rounded-2xl text-3xl text-center" /></div>
-                <div><label>Opponent Games Won</label><input type="number" value={loserGames} onChange={(e) => setLoserGames(Number(e.target.value))} className="w-full p-4 border rounded-2xl text-3xl text-center" /></div>
+                <div>
+                  <label className="block text-sm mb-2">Your Games Won</label>
+                  <input type="number" value={winnerGames} onChange={(e) => setWinnerGames(Number(e.target.value))} className="w-full p-4 border rounded-2xl text-3xl text-center" />
+                </div>
+                <div>
+                  <label className="block text-sm mb-2">Opponent Games Won</label>
+                  <input type="number" value={loserGames} onChange={(e) => setLoserGames(Number(e.target.value))} className="w-full p-4 border rounded-2xl text-3xl text-center" />
+                </div>
               </div>
             </div>
             <div className="flex gap-3 mt-8">
@@ -281,24 +284,30 @@ export default function Ladder() {
             <h2 className="text-2xl font-bold mb-6">How to Use</h2>
             <div className="space-y-4 text-sm leading-relaxed">
               <p><strong>1.</strong> Register with code <strong>N&P2026</strong></p>
-              <p><strong>2.</strong> Play exactly <strong>15 games</strong> total (not sets)</p>
-              <p><strong>3.</strong> Record score (e.g. 8-7, 9-6)</p>
+              <p><strong>2.</strong> Play exactly <strong>15 games</strong> total</p>
+              <p><strong>3.</strong> Record score (e.g. 8-7)</p>
               <p><strong>4.</strong> 1 point per game won</p>
-              <p><strong>5.</strong> You can only play each opponent <strong>once</strong></p>
+              <p><strong>5.</strong> You can only play each opponent once</p>
             </div>
             <button onClick={() => setShowHowToUse(false)} className="mt-8 w-full py-4 bg-emerald-600 text-white rounded-2xl">Close</button>
           </div>
         </div>
       )}
 
-      {/* Admin Modal */}
+      {/* Admin Modal - No hint visible */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl p-8 max-w-md w-full">
             <h2 className="text-2xl font-bold mb-6">Admin Panel</h2>
             {!isAdmin ? (
               <>
-                <input type="password" value={adminCodeInput} onChange={(e) => setAdminCodeInput(e.target.value)} placeholder="Enter ADMIN2026" className="w-full p-4 border rounded-2xl mb-4" />
+                <input 
+                  type="password" 
+                  value={adminCodeInput} 
+                  onChange={(e) => setAdminCodeInput(e.target.value)} 
+                  placeholder="Enter admin code" 
+                  className="w-full p-4 border rounded-2xl mb-4" 
+                />
                 <button onClick={handleAdminLogin} className="w-full py-4 bg-orange-600 text-white rounded-2xl">Login as Admin</button>
               </>
             ) : (

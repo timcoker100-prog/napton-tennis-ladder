@@ -13,7 +13,7 @@ interface Player {
 }
 
 interface Match {
-  id: string;
+  id?: string;           // made optional
   winner_name: string;
   loser_name: string;
 }
@@ -30,11 +30,11 @@ export default function Ladder() {
   const [selectedOpponent, setSelectedOpponent] = useState('');
   const [winnerGames, setWinnerGames] = useState(0);
   const [loserGames, setLoserGames] = useState(0);
-  const [currentUserEmail, setCurrentUserEmail] = useState<string>('');
 
   const loadData = async () => {
     const { data: pData } = await supabase.from('players').select('*');
     const { data: mData } = await supabase.from('matches').select('winner_name, loser_name');
+    
     setPlayers(pData || []);
     setMatches(mData || []);
   };
@@ -47,18 +47,21 @@ export default function Ladder() {
 
   const handleAdmin = () => {
     const code = prompt("Enter Admin Code:");
-    if (code === ADMIN_CODE) setShowAdminModal(true);
-    else if (code) alert("❌ Wrong admin code");
+    if (code === ADMIN_CODE) {
+      setShowAdminModal(true);
+    } else if (code) {
+      alert("❌ Wrong admin code");
+    }
   };
 
   const resetAllData = async () => {
-    if (!confirm("⚠️ Delete ALL players and matches? This cannot be undone!")) return;
+    if (!confirm("⚠️ Clear ALL players and matches? This cannot be undone!")) return;
     
-    await supabase.from('matches').delete().neq('id', '0');
     await supabase.from('players').delete().neq('id', '0');
+    await supabase.from('matches').delete().neq('id', '0');
     
     loadData();
-    alert("✅ Ladder has been completely reset");
+    alert("✅ Ladder has been fully reset");
   };
 
   const removePlayer = async (email: string) => {
@@ -73,15 +76,17 @@ export default function Ladder() {
       return;
     }
 
-    const winner = players.find(p => p.email === currentUserEmail);
+    const winnerEmail = prompt("Enter YOUR email to record this match:");
+    if (!winnerEmail) return;
+
+    const winner = players.find(p => p.email.toLowerCase() === winnerEmail.toLowerCase());
     const loser = players.find(p => p.name === selectedOpponent);
 
     if (!winner || !loser) {
-      alert("Player not found. Make sure you are logged in.");
+      alert("Player not found. Make sure you entered the correct email.");
       return;
     }
 
-    // Check if they already played
     const alreadyPlayed = matches.some(m =>
       (m.winner_name === winner.name && m.loser_name === loser.name) ||
       (m.winner_name === loser.name && m.loser_name === winner.name)
@@ -201,11 +206,9 @@ export default function Ladder() {
               className="w-full border rounded-xl px-4 py-3 mb-6"
             >
               <option value="">Select Opponent</option>
-              {players
-                .filter(p => p.email !== currentUserEmail)
-                .map(p => (
-                  <option key={p.email} value={p.name}>{p.name}</option>
-                ))}
+              {players.map(p => (
+                <option key={p.email} value={p.name}>{p.name}</option>
+              ))}
             </select>
 
             <div className="grid grid-cols-2 gap-4 mb-6">

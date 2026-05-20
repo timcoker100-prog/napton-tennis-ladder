@@ -8,8 +8,11 @@ const SECRET_CODE = 'N&P2026';
 
 export default function LoginPage() {
   const router = useRouter();
+  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -19,49 +22,29 @@ export default function LoginPage() {
     setMessage('');
     setLoading(true);
 
-    console.log("Starting registration...");
-
     if (code !== SECRET_CODE) {
-      setMessage("❌ Wrong code");
+      setMessage("❌ Incorrect secret code. Contact timcoker100@gmail.com");
       setLoading(false);
       return;
     }
 
     try {
-      console.log("Checking if email exists...");
-      const { data: existing, error: checkError } = await supabase
-        .from('players')
-        .select('email')
-        .eq('email', email.trim().toLowerCase())
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error("Check error:", checkError);
-      }
-
-      if (existing) {
-        setMessage("✅ Already registered! Redirecting...");
-        router.push('/ladder');
-        return;
-      }
-
-      console.log("Inserting new player...");
-      const { error: insertError } = await supabase.from('players').insert({
+      const { error } = await supabase.from('players').insert({
         name: name.trim(),
         email: email.trim().toLowerCase(),
+        phone: phone.trim() || null,
+        whatsapp: whatsapp.trim() || null,
         points: 0
       });
 
-      if (insertError) {
-        console.error("Insert error:", insertError);
-        setMessage("❌ Insert failed: " + insertError.message);
+      if (error) {
+        setMessage("❌ " + error.message);
       } else {
-        setMessage("✅ Success! Redirecting to ladder...");
-        setTimeout(() => router.push('/ladder'), 1200);
+        setMessage("✅ Registration successful! Redirecting to ladder...");
+        setTimeout(() => router.push('/ladder'), 1500);
       }
     } catch (err: any) {
-      console.error("Catch error:", err);
-      setMessage("❌ Failed to fetch: " + (err.message || err));
+      setMessage("❌ Failed to connect to database. Please try again.");
     }
 
     setLoading(false);
@@ -78,30 +61,83 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Form fields same as before */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="Tim Coker" />
+            <input
+              type="text"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full border border-gray-300 rounded-2xl px-5 py-4 focus:outline-none focus:border-emerald-500"
+              placeholder="Tim Coker"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="your@email.com" />
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border border-gray-300 rounded-2xl px-5 py-4 focus:outline-none focus:border-emerald-500"
+              placeholder="your@email.com"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (optional)</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full border border-gray-300 rounded-2xl px-5 py-4 focus:outline-none focus:border-emerald-500"
+              placeholder="07927 315456"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number (optional)</label>
+            <input
+              type="tel"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              className="w-full border border-gray-300 rounded-2xl px-5 py-4 focus:outline-none focus:border-emerald-500"
+              placeholder="07927 315456"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Secret Code</label>
-            <input type="text" required value={code} onChange={(e) => setCode(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="N&P2026" />
+            <input
+              type="text"
+              required
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="w-full border border-gray-300 rounded-2xl px-5 py-4 focus:outline-none focus:border-emerald-500"
+              placeholder="N&P2026"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Contact timcoker100@gmail.com for the code
+            </p>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl text-lg">
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-4 rounded-2xl text-lg transition disabled:opacity-70"
+          >
             {loading ? "Registering..." : "Join the Ladder"}
           </button>
         </form>
 
-        {message && <p className="mt-4 text-center font-medium text-red-600">{message}</p>}
+        {message && (
+          <p className="mt-4 text-center font-medium text-red-600">{message}</p>
+        )}
 
-        <p className="text-center text-sm text-gray-500 mt-8">Already registered? Use the same details above.</p>
+        <p className="text-center text-sm text-gray-500 mt-8">
+          Already registered? Just use the same details above.
+        </p>
       </div>
     </div>
   );

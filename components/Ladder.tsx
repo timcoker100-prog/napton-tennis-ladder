@@ -38,8 +38,16 @@ export default function Ladder() {
   const loadData = async () => {
     const { data: pData } = await supabase.from('players').select('*');
     const { data: mData } = await supabase.from('matches').select('*');
+    
     setPlayers(pData || []);
-    setMatches(mData || []);
+
+    // Only show matches where both players still exist
+    const currentPlayerNames = new Set(pData?.map(p => p.name) || []);
+    const validMatches = (mData || []).filter(m => 
+      currentPlayerNames.has(m.winner_name) && currentPlayerNames.has(m.loser_name)
+    );
+    
+    setMatches(validMatches);
   };
 
   useEffect(() => {
@@ -55,23 +63,21 @@ export default function Ladder() {
   };
 
   const resetAllData = async () => {
-    if (!confirm("⚠️ Delete ALL players and matches? This cannot be undone!")) return;
+    if (!confirm("Clear ALL data?")) return;
     await supabase.from('matches').delete().neq('id', '0');
     await supabase.from('players').delete().neq('id', '0');
     loadData();
-    alert("✅ Everything has been reset");
+    alert("✅ Ladder reset");
   };
 
   const removePlayer = async (email: string) => {
-    if (!confirm("Remove this player and all their matches?")) return;
-
+    if (!confirm("Remove this player and their matches?")) return;
     const player = players.find(p => p.email === email);
     if (player) {
       await supabase.from('matches').delete().or(`winner_name.eq.${player.name},loser_name.eq.${player.name}`);
     }
     await supabase.from('players').delete().eq('email', email);
     loadData();
-    alert("Player and their matches removed");
   };
 
   const recordMatch = async () => {
@@ -89,7 +95,6 @@ export default function Ladder() {
 
     if (!p1 || !p2) return;
 
-    // Record match
     await supabase.from('matches').insert({
       winner_name: player1Games > player2Games ? p1.name : p2.name,
       loser_name: player1Games > player2Games ? p2.name : p1.name,
@@ -98,11 +103,10 @@ export default function Ladder() {
       date: new Date().toISOString().split('T')[0]
     });
 
-    // Update points
     await supabase.from('players').update({ points: p1.points + player1Games }).eq('id', p1.id);
     await supabase.from('players').update({ points: p2.points + player2Games }).eq('id', p2.id);
 
-    alert("✅ Match recorded and points updated!");
+    alert("✅ Match recorded!");
     setShowMatchModal(false);
     setPlayer1(''); setPlayer2('');
     setPlayer1Games(0); setPlayer2Games(0);
@@ -162,7 +166,7 @@ export default function Ladder() {
           </div>
         </div>
 
-        {/* Recent Matches */}
+        {/* Recent Matches - Only current players */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-emerald-700 text-white p-6">
             <h2 className="text-3xl font-bold">Recent Matches</h2>

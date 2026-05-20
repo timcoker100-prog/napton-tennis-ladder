@@ -12,27 +12,40 @@ interface Player {
   points: number;
 }
 
+interface Match {
+  id: string;
+  winner_name: string;
+  loser_name: string;
+  winner_games: number;
+  loser_games: number;
+  date: string;
+}
+
 const ADMIN_CODE = 'ADMIN2026';
 
 export default function Ladder() {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [showHowToUse, setShowHowToUse] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
 
+  // Record Match
   const [player1, setPlayer1] = useState('');
   const [player2, setPlayer2] = useState('');
   const [player1Games, setPlayer1Games] = useState(0);
   const [player2Games, setPlayer2Games] = useState(0);
 
   const loadData = async () => {
-    const { data } = await supabase.from('players').select('*');
-    setPlayers(data || []);
+    const { data: pData } = await supabase.from('players').select('*');
+    const { data: mData } = await supabase.from('matches').select('*');
+    setPlayers(pData || []);
+    setMatches(mData || []);
   };
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 3000);
+    const interval = setInterval(loadData, 2000);
     return () => clearInterval(interval);
   }, []);
 
@@ -44,14 +57,14 @@ export default function Ladder() {
 
   const resetAllData = async () => {
     if (!confirm("Clear ALL data?")) return;
-    await supabase.from('players').delete().neq('id', '0');
     await supabase.from('matches').delete().neq('id', '0');
+    await supabase.from('players').delete().neq('id', '0');
     loadData();
     alert("✅ Ladder reset");
   };
 
   const removePlayer = async (email: string) => {
-    if (!confirm("Remove player?")) return;
+    if (!confirm("Remove player and their matches?")) return;
     await supabase.from('players').delete().eq('email', email);
     loadData();
   };
@@ -62,14 +75,14 @@ export default function Ladder() {
       return;
     }
     if (player1Games + player2Games !== 15) {
-      alert("Total must be 15 games");
+      alert("Total games must be exactly 15");
       return;
     }
 
     const p1 = players.find(p => p.name === player1);
     const p2 = players.find(p => p.name === player2);
 
-    await supabase.from('matches').insert({
+    const { error } = await supabase.from('matches').insert({
       winner_name: player1Games > player2Games ? p1!.name : p2!.name,
       loser_name: player1Games > player2Games ? p2!.name : p1!.name,
       winner_games: Math.max(player1Games, player2Games),
@@ -77,14 +90,15 @@ export default function Ladder() {
       date: new Date().toISOString().split('T')[0]
     });
 
-    await supabase.from('players').update({ points: p1!.points + player1Games }).eq('id', p1!.id);
-    await supabase.from('players').update({ points: p2!.points + player2Games }).eq('id', p2!.id);
-
-    alert("✅ Match recorded!");
-    setShowMatchModal(false);
-    setPlayer1(''); setPlayer2('');
-    setPlayer1Games(0); setPlayer2Games(0);
-    loadData();
+    if (error) {
+      alert("Error: " + error.message);
+    } else {
+      alert("✅ Match recorded!");
+      setShowMatchModal(false);
+      setPlayer1(''); setPlayer2('');
+      setPlayer1Games(0); setPlayer2Games(0);
+      loadData();
+    }
   };
 
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
@@ -105,48 +119,74 @@ export default function Ladder() {
           <button onClick={() => window.location.href = '/login'} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl">Logout</button>
         </div>
 
-        {/* Ladder */}
+        {/* Current Ladder */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
           <div className="bg-emerald-700 text-white p-6">
             <h2 className="text-3xl font-bold">Current Ladder</h2>
           </div>
-          <table className="w-full">
-            <thead>
-              <tr className="bg-emerald-100">
-                <th className="px-6 py-4 text-left">Rank</th>
-                <th className="px-6 py-4 text-left">Player</th>
-                <th className="px-6 py-4 text-center">Points</th>
-                <th className="px-6 py-4 text-center">Contact</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedPlayers.map((player, index) => (
-                <tr key={player.id} className="border-b hover:bg-emerald-50">
-                  <td className="px-6 py-4 font-semibold">{index + 1}</td>
-                  <td className="px-6 py-4 font-medium">{player.name}</td>
-                  <td className="px-6 py-4 text-center font-bold text-emerald-700">{player.points}</td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex gap-4 justify-center text-2xl">
-                      {player.email && <a href={`mailto:${player.email}`} title="Email">✉️</a>}
-                      {player.phone && <a href={`tel:${player.phone}`} title="Call">📞</a>}
-                      {player.whatsapp && <a href={`https://wa.me/${player.whatsapp.replace(/\D/g,'')}`} target="_blank" title="WhatsApp">💬</a>}
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-emerald-100">
+                  <th className="px-6 py-4 text-left">Rank</th>
+                  <th className="px-6 py-4 text-left">Player</th>
+                  <th className="px-6 py-4 text-center">Points</th>
+                  <th className="px-6 py-4 text-center">Contact</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sortedPlayers.map((player, index) => (
+                  <tr key={player.id} className="border-b hover:bg-emerald-50">
+                    <td className="px-6 py-4 font-semibold">{index + 1}</td>
+                    <td className="px-6 py-4 font-medium">{player.name}</td>
+                    <td className="px-6 py-4 text-center font-bold text-emerald-700">{player.points}</td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-4 justify-center text-2xl">
+                        {player.email && <a href={`mailto:${player.email}`} title="Email">✉️</a>}
+                        {player.phone && <a href={`tel:${player.phone}`} title="Call">📞</a>}
+                        {player.whatsapp && <a href={`https://wa.me/${player.whatsapp.replace(/\D/g,'')}`} target="_blank" title="WhatsApp">💬</a>}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Recent Matches - Very Clear */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-emerald-700 text-white p-6">
+            <h2 className="text-3xl font-bold">Recent Matches</h2>
+          </div>
+          <div className="p-6 space-y-3">
+            {matches.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No matches played yet</p>
+            ) : (
+              matches.slice(-10).reverse().map((m, i) => (
+                <div key={i} className="flex justify-between items-center bg-gray-50 p-4 rounded-xl">
+                  <div className="font-medium">
+                    <span className="text-emerald-700">{m.winner_name}</span> beat <span>{m.loser_name}</span>
+                  </div>
+                  <div className="text-lg font-semibold">
+                    {m.winner_games} - {m.loser_games}
+                  </div>
+                  <div className="text-sm text-gray-500">{m.date}</div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Modals */}
+      {/* Admin Modal */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
             <h3 className="text-2xl font-bold text-red-600 mb-6">Admin Panel</h3>
             <button onClick={resetAllData} className="w-full bg-red-600 text-white py-4 rounded-xl mb-6">Clear All Data</button>
             {players.map(p => (
-              <div key={p.email} className="flex justify-between py-2 border-b">
+              <div key={p.email} className="flex justify-between py-3 border-b">
                 <span>{p.name}</span>
                 <button onClick={() => removePlayer(p.email)} className="text-red-500">Remove</button>
               </div>
@@ -156,27 +196,57 @@ export default function Ladder() {
         </div>
       )}
 
+      {/* Record Match Modal - Clearer Labels */}
       {showMatchModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full">
             <h3 className="text-2xl font-bold mb-6">Record New Match</h3>
-            {/* Simple two dropdowns */}
-            <select value={player1} onChange={e => setPlayer1(e.target.value)} className="w-full border rounded-xl px-4 py-3 mb-4">
-              <option value="">Player 1</option>
-              {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-            </select>
-            <select value={player2} onChange={e => setPlayer2(e.target.value)} className="w-full border rounded-xl px-4 py-3 mb-6">
-              <option value="">Player 2</option>
-              {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
-            </select>
-
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <input type="number" min="0" max="15" value={player1Games} onChange={e => setPlayer1Games(Number(e.target.value))} className="border rounded-xl px-4 py-3 text-center" placeholder="Games" />
-              <input type="number" min="0" max="15" value={player2Games} onChange={e => setPlayer2Games(Number(e.target.value))} className="border rounded-xl px-4 py-3 text-center" placeholder="Games" />
+            
+            <div className="mb-4">
+              <label className="block text-sm mb-1">Player 1</label>
+              <select value={player1} onChange={(e) => setPlayer1(e.target.value)} className="w-full border rounded-xl px-4 py-3">
+                <option value="">Select Player 1</option>
+                {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
             </div>
 
-            <button onClick={recordMatch} className="w-full bg-emerald-600 text-white py-4 rounded-xl">Record Match</button>
-            <button onClick={() => setShowMatchModal(false)} className="w-full mt-3 text-gray-500">Cancel</button>
+            <div className="mb-6">
+              <label className="block text-sm mb-1">Player 2</label>
+              <select value={player2} onChange={(e) => setPlayer2(e.target.value)} className="w-full border rounded-xl px-4 py-3">
+                <option value="">Select Player 2</option>
+                {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <p className="text-sm mb-1 font-medium">{player1 || "Player 1"} Games Won</p>
+                <input type="number" min="0" max="15" value={player1Games} onChange={(e) => setPlayer1Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center text-xl" />
+              </div>
+              <div>
+                <p className="text-sm mb-1 font-medium">{player2 || "Player 2"} Games Won</p>
+                <input type="number" min="0" max="15" value={player2Games} onChange={(e) => setPlayer2Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center text-xl" />
+              </div>
+            </div>
+
+            <button onClick={recordMatch} className="w-full bg-emerald-600 text-white py-4 rounded-xl mb-3">Record Match</button>
+            <button onClick={() => setShowMatchModal(false)} className="w-full py-3 text-gray-500">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* How to Use Modal */}
+      {showHowToUse && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
+            <h3 className="text-2xl font-bold mb-6">How to Use the Ladder</h3>
+            <div className="space-y-4">
+              <p>• Play a match of <strong>exactly 15 games</strong> (not sets)</p>
+              <p>• 1 point per game won</p>
+              <p>• You can only play each opponent once</p>
+              <p>• Use "Record Match" to enter the result</p>
+            </div>
+            <button onClick={() => setShowHowToUse(false)} className="mt-8 w-full bg-emerald-600 text-white py-3 rounded-xl">Close</button>
           </div>
         </div>
       )}

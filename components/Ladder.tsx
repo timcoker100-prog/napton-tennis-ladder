@@ -12,10 +12,20 @@ interface Player {
   points: number;
 }
 
+interface Match {
+  id: string;
+  winner_name: string;
+  loser_name: string;
+  winner_games: number;
+  loser_games: number;
+  date: string;
+}
+
 const ADMIN_CODE = 'ADMIN2026';
 
 export default function Ladder() {
   const [players, setPlayers] = useState<Player[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [showHowToUse, setShowHowToUse] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -28,12 +38,14 @@ export default function Ladder() {
 
   const loadData = async () => {
     const { data: pData } = await supabase.from('players').select('*');
+    const { data: mData } = await supabase.from('matches').select('*');
     setPlayers(pData || []);
+    setMatches(mData || []);
   };
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 2000);
+    const interval = setInterval(loadData, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -44,13 +56,11 @@ export default function Ladder() {
   };
 
   const resetAllData = async () => {
-    if (!confirm("⚠️ Delete EVERYTHING? This cannot be undone!")) return;
-
+    if (!confirm("Clear ALL data?")) return;
     await supabase.from('matches').delete().neq('id', '0');
     await supabase.from('players').delete().neq('id', '0');
-
     loadData();
-    alert("✅ Ladder has been completely reset!");
+    alert("✅ Ladder reset");
   };
 
   const removePlayer = async (email: string) => {
@@ -61,51 +71,33 @@ export default function Ladder() {
 
   const recordMatch = async () => {
     if (!player1 || !player2 || player1 === player2) {
-      alert("Please select two different players");
+      alert("Select two different players");
       return;
     }
     if (player1Games + player2Games !== 15) {
-      alert("Total games must be exactly 15");
+      alert("Total games must be 15");
       return;
     }
 
     const p1 = players.find(p => p.name === player1);
     const p2 = players.find(p => p.name === player2);
 
-    if (!p1 || !p2) return alert("Player not found");
-
-    // Record the match
-    const { error: matchError } = await supabase.from('matches').insert({
-      winner_name: player1Games > player2Games ? p1.name : p2.name,
-      loser_name: player1Games > player2Games ? p2.name : p1.name,
+    const { error } = await supabase.from('matches').insert({
+      winner_name: player1Games > player2Games ? p1!.name : p2!.name,
+      loser_name: player1Games > player2Games ? p2!.name : p1!.name,
       winner_games: Math.max(player1Games, player2Games),
       loser_games: Math.min(player1Games, player2Games),
       date: new Date().toISOString().split('T')[0]
     });
 
-    if (matchError) {
-      alert("Error recording match: " + matchError.message);
-      return;
+    if (error) alert("Error: " + error.message);
+    else {
+      alert("✅ Match recorded!");
+      setShowMatchModal(false);
+      setPlayer1(''); setPlayer2('');
+      setPlayer1Games(0); setPlayer2Games(0);
+      loadData();
     }
-
-    // Update points
-    await supabase
-      .from('players')
-      .update({ points: p1.points + player1Games })
-      .eq('email', p1.email);
-
-    await supabase
-      .from('players')
-      .update({ points: p2.points + player2Games })
-      .eq('email', p2.email);
-
-    alert("✅ Match recorded and points updated!");
-    setShowMatchModal(false);
-    setPlayer1(''); 
-    setPlayer2('');
-    setPlayer1Games(0);
-    setPlayer2Games(0);
-    loadData();
   };
 
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
@@ -127,7 +119,7 @@ export default function Ladder() {
         </div>
 
         {/* Current Ladder */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
           <div className="bg-emerald-700 text-white p-6">
             <h2 className="text-3xl font-bold">Current Ladder</h2>
           </div>
@@ -160,6 +152,31 @@ export default function Ladder() {
             </table>
           </div>
         </div>
+
+        {/* Match History */}
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-emerald-700 text-white p-6">
+            <h2 className="text-3xl font-bold">Recent Matches</h2>
+          </div>
+          <div className="p-6">
+            {matches.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No matches played yet</p>
+            ) : (
+              <div className="space-y-3">
+                {matches.slice(-10).reverse().map((m, i) => (
+                  <div key={i} className="flex justify-between items-center bg-gray-50 p-4 rounded-xl">
+                    <div>
+                      <span className="font-medium">{m.winner_name}</span> beat <span className="font-medium">{m.loser_name}</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {m.winner_games} - {m.loser_games} • {m.date}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Admin Modal */}
@@ -168,7 +185,7 @@ export default function Ladder() {
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
             <h3 className="text-2xl font-bold text-red-600 mb-6">Admin Panel</h3>
             
-            <button onClick={resetAllData} className="w-full bg-red-600 text-white py-4 rounded-xl mb-6 font-medium text-lg">
+            <button onClick={resetAllData} className="w-full bg-red-600 text-white py-4 rounded-xl mb-6 font-medium">
               ❌ Clear All Data (Reset Ladder)
             </button>
 
@@ -210,16 +227,32 @@ export default function Ladder() {
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
                 <p className="text-sm mb-1">{player1 || "Player 1"} Games Won</p>
-                <input type="number" min="0" max="15" value={player1Games} onChange={(e) => setPlayer1Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center text-xl" />
+                <input type="number" min="0" max="15" value={player1Games} onChange={(e) => setPlayer1Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center" />
               </div>
               <div>
                 <p className="text-sm mb-1">{player2 || "Player 2"} Games Won</p>
-                <input type="number" min="0" max="15" value={player2Games} onChange={(e) => setPlayer2Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center text-xl" />
+                <input type="number" min="0" max="15" value={player2Games} onChange={(e) => setPlayer2Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center" />
               </div>
             </div>
 
             <button onClick={recordMatch} className="w-full bg-emerald-600 text-white py-4 rounded-xl mb-3">Record Match</button>
             <button onClick={() => setShowMatchModal(false)} className="w-full py-3 text-gray-500">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* How to Use Modal */}
+      {showHowToUse && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
+            <h3 className="text-2xl font-bold mb-6">How to Use the Ladder</h3>
+            <div className="space-y-4 text-gray-700">
+              <p>• A match consists of <strong>15 games total</strong> (not sets)</p>
+              <p>• 1 point is awarded for each game won</p>
+              <p>• You can only play each opponent <strong>once</strong></p>
+              <p>• Use "Record Match" to enter results</p>
+            </div>
+            <button onClick={() => setShowHowToUse(false)} className="mt-8 w-full bg-emerald-600 text-white py-3 rounded-xl">Close</button>
           </div>
         </div>
       )}

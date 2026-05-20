@@ -19,44 +19,49 @@ export default function LoginPage() {
     setMessage('');
     setLoading(true);
 
+    console.log("Starting registration...");
+
     if (code !== SECRET_CODE) {
-      setMessage("❌ Incorrect code. Contact timcoker100@gmail.com");
+      setMessage("❌ Wrong code");
       setLoading(false);
       return;
     }
 
     try {
-      // Check if email already exists
-      const { data: existing } = await supabase
+      console.log("Checking if email exists...");
+      const { data: existing, error: checkError } = await supabase
         .from('players')
         .select('email')
         .eq('email', email.trim().toLowerCase())
         .single();
 
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error("Check error:", checkError);
+      }
+
       if (existing) {
-        setMessage("✅ You are already registered! Going to ladder...");
+        setMessage("✅ Already registered! Redirecting...");
         router.push('/ladder');
         return;
       }
 
-      // Create new player
-      const { error } = await supabase.from('players').insert({
+      console.log("Inserting new player...");
+      const { error: insertError } = await supabase.from('players').insert({
         name: name.trim(),
         email: email.trim().toLowerCase(),
-        points: 0,
-        phone: null,
-        whatsapp: null
+        points: 0
       });
 
-      if (error) {
-        console.error(error);
-        setMessage("❌ Registration failed: " + error.message);
+      if (insertError) {
+        console.error("Insert error:", insertError);
+        setMessage("❌ Insert failed: " + insertError.message);
       } else {
-        setMessage("✅ Registration successful! Welcome!");
-        setTimeout(() => router.push('/ladder'), 1500);
+        setMessage("✅ Success! Redirecting to ladder...");
+        setTimeout(() => router.push('/ladder'), 1200);
       }
     } catch (err: any) {
-      setMessage("❌ Something went wrong: " + err.message);
+      console.error("Catch error:", err);
+      setMessage("❌ Failed to fetch: " + (err.message || err));
     }
 
     setLoading(false);
@@ -73,61 +78,30 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Form fields same as before */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full border border-gray-300 rounded-2xl px-5 py-4 focus:outline-none focus:border-emerald-500"
-              placeholder="e.g. Tim Coker"
-            />
+            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="Tim Coker" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-2xl px-5 py-4 focus:outline-none focus:border-emerald-500"
-              placeholder="your@email.com"
-            />
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="your@email.com" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Secret Code</label>
-            <input
-              type="text"
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="w-full border border-gray-300 rounded-2xl px-5 py-4 focus:outline-none focus:border-emerald-500"
-              placeholder="Enter code"
-            />
-            <p className="text-xs text-gray-500 mt-2">
-              Contact timcoker100@gmail.com for the code
-            </p>
+            <input type="text" required value={code} onChange={(e) => setCode(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-5 py-4" placeholder="N&P2026" />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-4 rounded-2xl text-lg transition disabled:opacity-70"
-          >
+          <button type="submit" disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-2xl text-lg">
             {loading ? "Registering..." : "Join the Ladder"}
           </button>
         </form>
 
-        {message && (
-          <p className="mt-4 text-center font-medium text-red-600">{message}</p>
-        )}
+        {message && <p className="mt-4 text-center font-medium text-red-600">{message}</p>}
 
-        <p className="text-center text-sm text-gray-500 mt-8">
-          Already registered? Just use the same details above.
-        </p>
+        <p className="text-center text-sm text-gray-500 mt-8">Already registered? Use the same details above.</p>
       </div>
     </div>
   );

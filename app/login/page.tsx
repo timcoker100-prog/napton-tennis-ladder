@@ -28,18 +28,23 @@ export default function Login() {
     try {
       const { data: existing } = await supabase
         .from('players')
-        .select('*')
+        .select('name, email')
         .eq('email', email.toLowerCase().trim())
         .single();
 
       if (existing) {
-        setMessage("✅ You are already registered. Taking you to the ladder...");
-        localStorage.setItem('isLoggedIn', 'true');
-        setTimeout(() => router.push('/ladder'), 1500);
+        if (existing.name.toLowerCase() !== name.toLowerCase().trim()) {
+          setMessage("❌ This email is already registered under a different name.");
+        } else {
+          setMessage("✅ You are already registered. Taking you to the ladder...");
+          localStorage.setItem('isLoggedIn', 'true');
+          setTimeout(() => router.push('/ladder'), 1200);
+        }
+        setLoading(false);
         return;
       }
 
-      // New player
+      // New registration
       const { error } = await supabase.from('players').insert({
         name: name.trim(),
         email: email.toLowerCase().trim(),

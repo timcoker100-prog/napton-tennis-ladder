@@ -36,19 +36,31 @@ export default function Ladder() {
   const [player1Games, setPlayer1Games] = useState(0);
   const [player2Games, setPlayer2Games] = useState(0);
 
-  // Auto logout after 10 minutes inactivity
+  // ====================== PROTECTED PAGE - MUST BE LOGGED IN ======================
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    if (!isLoggedIn) {
+      window.location.href = '/login';
+    }
+  }, []);
+  // ===============================================================================
+
+  // ====================== AUTO LOGOUT AFTER 10 MINUTES ======================
   useEffect(() => {
     let timeout: NodeJS.Timeout;
+
     const resetTimer = () => {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
         alert("⏰ You've been logged out due to 10 minutes of inactivity.");
+        localStorage.removeItem('isLoggedIn');
         window.location.href = '/login';
       }, INACTIVITY_TIMEOUT);
     };
 
     const events = ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'];
     events.forEach(event => window.addEventListener(event, resetTimer));
+
     resetTimer();
 
     return () => {
@@ -56,6 +68,7 @@ export default function Ladder() {
       events.forEach(event => window.removeEventListener(event, resetTimer));
     };
   }, []);
+  // ============================================================================
 
   const loadData = async () => {
     const { data: pData } = await supabase.from('players').select('*');
@@ -160,10 +173,11 @@ export default function Ladder() {
           <button onClick={() => setShowMatchModal(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl">🎾 Record Match</button>
           <button onClick={() => setShowHowToUse(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl">📖 How to Use</button>
           <button onClick={handleAdmin} className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl">🔧 Admin</button>
-          <button onClick={() => window.location.href = '/login'} className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl">Logout</button>
+          <button onClick={() => { localStorage.removeItem('isLoggedIn'); window.location.href = '/login'; }} 
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-3 rounded-xl">Logout</button>
         </div>
 
-        {/* Current Ladder */}
+        {/* Current Ladder & Recent Matches - same as before */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8">
           <div className="bg-emerald-700 text-white p-6">
             <h2 className="text-3xl font-bold">Current Ladder</h2>
@@ -198,7 +212,6 @@ export default function Ladder() {
           </div>
         </div>
 
-        {/* Recent Matches */}
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-emerald-700 text-white p-6">
             <h2 className="text-3xl font-bold">Recent Matches</h2>
@@ -223,7 +236,7 @@ export default function Ladder() {
         </div>
       </div>
 
-      {/* Admin Modal */}
+      {/* Modals remain the same */}
       {showAdminModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
@@ -240,7 +253,6 @@ export default function Ladder() {
         </div>
       )}
 
-      {/* Record Match Modal */}
       {showMatchModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full">
@@ -277,7 +289,6 @@ export default function Ladder() {
         </div>
       )}
 
-      {/* How to Use Modal - UPDATED */}
       {showHowToUse && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
@@ -285,25 +296,18 @@ export default function Ladder() {
             <div className="space-y-5 text-gray-700">
               <div>
                 <p className="font-semibold">🎾 Arranging a Match:</p>
-                <p>1. Look at the <strong>Contact</strong> column (📧 📞 💬 icons)</p>
-                <p>2. Click the icons to email, call, or WhatsApp other players</p>
-                <p>3. Arrange and play your match (15 games total)</p>
-                <p>4. The winner (or loser) then clicks <strong>"Record Match"</strong> to enter the score</p>
+                <p>1. Use the contact icons (📧 📞 💬) next to each player to message them</p>
+                <p>2. Arrange and play your 15-game match</p>
+                <p>3. Click <strong>"Record Match"</strong> to enter the result</p>
               </div>
-
               <div>
                 <p className="font-semibold">Match Rules:</p>
-                <p>• Play exactly <strong>15 games</strong> (not sets)</p>
+                <p>• Exactly 15 games total</p>
                 <p>• 1 point per game won</p>
-                <p>• You can only play each opponent <strong>once</strong></p>
+                <p>• You can only play each opponent once</p>
               </div>
             </div>
-            <button 
-              onClick={() => setShowHowToUse(false)} 
-              className="mt-8 w-full bg-emerald-600 text-white py-3 rounded-xl font-medium"
-            >
-              Close
-            </button>
+            <button onClick={() => setShowHowToUse(false)} className="mt-8 w-full bg-emerald-600 text-white py-3 rounded-xl font-medium">Close</button>
           </div>
         </div>
       )}

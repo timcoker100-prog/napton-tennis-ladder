@@ -36,10 +36,9 @@ export default function Ladder() {
   const [player1Games, setPlayer1Games] = useState(0);
   const [player2Games, setPlayer2Games] = useState(0);
 
-  // ====================== AUTO LOGOUT AFTER 10 MINUTES ======================
+  // Auto logout after 10 minutes inactivity
   useEffect(() => {
     let timeout: NodeJS.Timeout;
-
     const resetTimer = () => {
       clearTimeout(timeout);
       timeout = setTimeout(() => {
@@ -50,7 +49,6 @@ export default function Ladder() {
 
     const events = ['mousemove', 'keydown', 'scroll', 'click', 'touchstart'];
     events.forEach(event => window.addEventListener(event, resetTimer));
-
     resetTimer();
 
     return () => {
@@ -58,7 +56,6 @@ export default function Ladder() {
       events.forEach(event => window.removeEventListener(event, resetTimer));
     };
   }, []);
-  // =====================================================================
 
   const loadData = async () => {
     const { data: pData } = await supabase.from('players').select('*');
@@ -94,10 +91,8 @@ export default function Ladder() {
 
   const resetAllData = async () => {
     if (!confirm("⚠️ Delete ALL players and ALL matches?\n\nThis cannot be undone!")) return;
-
     await supabase.from('matches').delete().gte('id', '00000000-0000-0000-0000-000000000000');
     await supabase.from('players').delete().gte('id', '00000000-0000-0000-0000-000000000000');
-
     setPlayers([]);
     setMatches([]);
     alert("✅ Ladder has been completely reset");
@@ -282,19 +277,33 @@ export default function Ladder() {
         </div>
       )}
 
-      {/* How to Use Modal */}
+      {/* How to Use Modal - UPDATED */}
       {showHowToUse && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
             <h3 className="text-2xl font-bold mb-6">How to Use the Ladder</h3>
-            <div className="space-y-4 text-gray-700">
-              <p><strong>Match Rules:</strong></p>
-              <p>• Play exactly <strong>15 games</strong> (not sets)</p>
-              <p>• 1 point per game won</p>
-              <p>• You can only play each opponent <strong>once</strong></p>
-              <p>• Use "Record Match" button to submit score</p>
+            <div className="space-y-5 text-gray-700">
+              <div>
+                <p className="font-semibold">🎾 Arranging a Match:</p>
+                <p>1. Look at the <strong>Contact</strong> column (📧 📞 💬 icons)</p>
+                <p>2. Click the icons to email, call, or WhatsApp other players</p>
+                <p>3. Arrange and play your match (15 games total)</p>
+                <p>4. The winner (or loser) then clicks <strong>"Record Match"</strong> to enter the score</p>
+              </div>
+
+              <div>
+                <p className="font-semibold">Match Rules:</p>
+                <p>• Play exactly <strong>15 games</strong> (not sets)</p>
+                <p>• 1 point per game won</p>
+                <p>• You can only play each opponent <strong>once</strong></p>
+              </div>
             </div>
-            <button onClick={() => setShowHowToUse(false)} className="mt-8 w-full bg-emerald-600 text-white py-3 rounded-xl font-medium">Close</button>
+            <button 
+              onClick={() => setShowHowToUse(false)} 
+              className="mt-8 w-full bg-emerald-600 text-white py-3 rounded-xl font-medium"
+            >
+              Close
+            </button>
           </div>
         </div>
       )}

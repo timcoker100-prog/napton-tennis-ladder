@@ -14,13 +14,13 @@ export default function Login() {
   const [message, setMessage] = useState('');
   const router = useRouter();
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
 
     if (code !== 'N&P2026') {
-      setMessage("❌ Incorrect code. Please ask Tim for the correct code.");
+      setMessage("❌ Incorrect secret code.");
       setLoading(false);
       return;
     }
@@ -28,16 +28,18 @@ export default function Login() {
     try {
       const { data: existing } = await supabase
         .from('players')
-        .select('email')
+        .select('*')
         .eq('email', email.toLowerCase().trim())
         .single();
 
       if (existing) {
-        setMessage("✅ You are already registered! Redirecting to ladder...");
-        router.push('/ladder');
+        setMessage("✅ You are already registered. Taking you to the ladder...");
+        localStorage.setItem('isLoggedIn', 'true');
+        setTimeout(() => router.push('/ladder'), 1500);
         return;
       }
 
+      // New player
       const { error } = await supabase.from('players').insert({
         name: name.trim(),
         email: email.toLowerCase().trim(),
@@ -48,8 +50,10 @@ export default function Login() {
 
       if (error) throw error;
 
-      setMessage("🎉 Registration successful! Welcome to the ladder.");
+      setMessage("🎉 Registration successful!");
+      localStorage.setItem('isLoggedIn', 'true');
       setTimeout(() => router.push('/ladder'), 1500);
+
     } catch (err: any) {
       setMessage("❌ Error: " + (err.message || "Please try again"));
     } finally {
@@ -63,86 +67,47 @@ export default function Login() {
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-emerald-800">Napton & Priors Marston</h1>
           <p className="text-2xl text-emerald-700 mt-2">Singles Ladder (Mixed)</p>
-          <p className="text-gray-600 mt-4">Welcome! Please register below</p>
+          <p className="text-gray-600 mt-4">Register or log in below</p>
         </div>
 
-        <form onSubmit={handleRegister} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-            <input
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-500 text-lg"
-              placeholder="e.g. John Smith"
-            />
+            <input type="text" required value={name} onChange={(e) => setName(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-lg" placeholder="e.g. John Smith" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-500 text-lg"
-              placeholder="your@email.com"
-            />
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-lg" placeholder="your@email.com" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number (optional)</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-500 text-lg"
-              placeholder="07912 345678"
-            />
+            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-lg" placeholder="07912 345678" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp Number (optional)</label>
-            <input
-              type="tel"
-              value={whatsapp}
-              onChange={(e) => setWhatsapp(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-500 text-lg"
-              placeholder="07912 345678"
-            />
+            <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-lg" placeholder="07912 345678" />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Secret Code</label>
-            <input
-              type="password"
-              required
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-2xl focus:outline-none focus:border-emerald-500 text-lg"
-              placeholder="Enter code"
-            />
+            <input type="password" required value={code} onChange={(e) => setCode(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-2xl text-lg" placeholder="Enter code" />
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-medium py-4 rounded-2xl text-lg transition"
-          >
-            {loading ? "Registering..." : "Register & Join Ladder"}
+          <button type="submit" disabled={loading}
+            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-medium py-4 rounded-2xl text-lg">
+            {loading ? "Processing..." : "Register / Log In"}
           </button>
         </form>
 
-        {message && (
-          <p className="mt-6 text-center font-medium text-lg p-4 bg-emerald-50 rounded-2xl">
-            {message}
-          </p>
-        )}
-
-        <p className="text-center text-sm text-gray-500 mt-8">
-          Already registered? Just log in with the same email on the ladder page.
-        </p>
+        {message && <p className="mt-6 text-center text-lg font-medium p-4 bg-emerald-50 rounded-2xl">{message}</p>}
       </div>
     </div>
   );

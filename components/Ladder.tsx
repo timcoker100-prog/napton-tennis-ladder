@@ -22,7 +22,7 @@ interface Match {
 }
 
 const ADMIN_CODE = 'ADMIN2026';
-const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+const INACTIVITY_TIMEOUT = 2 * 60 * 1000; // 2 minutes
 
 export default function Ladder() {
   const [players, setPlayers] = useState<Player[]>([]);

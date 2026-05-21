@@ -37,13 +37,12 @@ export default function Ladder() {
   const [player1Games, setPlayer1Games] = useState(0);
   const [player2Games, setPlayer2Games] = useState(0);
 
-  // Current user profile for editing
   const [currentUser, setCurrentUser] = useState<Player | null>(null);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [editWhatsapp, setEditWhatsapp] = useState('');
 
-  // Auto logout after 2 minutes inactivity
+  // Auto logout after 2 minutes
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     const resetTimer = () => {
@@ -105,7 +104,7 @@ export default function Ladder() {
   };
 
   const openProfile = () => {
-    const userEmail = prompt("Enter your email to edit profile:");
+    const userEmail = prompt("Enter your email to edit your profile:");
     if (!userEmail) return;
     const user = players.find(p => p.email.toLowerCase() === userEmail.toLowerCase());
     if (user) {
@@ -115,7 +114,7 @@ export default function Ladder() {
       setEditWhatsapp(user.whatsapp || '');
       setShowProfileModal(true);
     } else {
-      alert("Email not found.");
+      alert("Email not found on the ladder.");
     }
   };
 
@@ -130,9 +129,8 @@ export default function Ladder() {
       })
       .eq('id', currentUser.id);
 
-    if (error) {
-      alert("Error updating profile");
-    } else {
+    if (error) alert("Error updating profile");
+    else {
       alert("✅ Profile updated successfully");
       setShowProfileModal(false);
       loadData();
@@ -206,7 +204,6 @@ export default function Ladder() {
         </div>
 
         <div className="flex flex-wrap gap-3 justify-center mb-8">
-          <button onClick={loadData} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl">🔄 Refresh</button>
           <button onClick={() => setShowMatchModal(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl">🎾 Record Match</button>
           <button onClick={() => setShowHowToUse(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl">📖 How to Use</button>
           <button onClick={openProfile} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl">👤 Profile</button>
@@ -278,7 +275,7 @@ export default function Ladder() {
       {showProfileModal && currentUser && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-md w-full">
-            <h3 className="text-2xl font-bold mb-6">Edit Profile</h3>
+            <h3 className="text-2xl font-bold mb-6">Edit Your Profile</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm mb-1">Full Name</label>
@@ -299,10 +296,44 @@ export default function Ladder() {
         </div>
       )}
 
-      {/* Other modals (Admin, Record Match, How to Use) */}
-      {/* ... (kept the same as previous working version) ... */}
+      {/* Record Match Modal */}
+      {showMatchModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full">
+            <h3 className="text-2xl font-bold mb-6">Record New Match</h3>
+            <div className="mb-4">
+              <label className="block text-sm mb-1">Player 1</label>
+              <select value={player1} onChange={(e) => setPlayer1(e.target.value)} className="w-full border rounded-xl px-4 py-3">
+                <option value="">Select Player 1</option>
+                {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
+            </div>
+            <div className="mb-6">
+              <label className="block text-sm mb-1">Player 2</label>
+              <select value={player2} onChange={(e) => setPlayer2(e.target.value)} className="w-full border rounded-xl px-4 py-3">
+                <option value="">Select Player 2</option>
+                {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+              </select>
+            </div>
 
-      {/* How to Use Modal - Updated */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <p className="text-sm mb-1">{player1 || "Player 1"} Games Won</p>
+                <input type="number" min="0" max="15" value={player1Games} onChange={(e) => setPlayer1Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center" />
+              </div>
+              <div>
+                <p className="text-sm mb-1">{player2 || "Player 2"} Games Won</p>
+                <input type="number" min="0" max="15" value={player2Games} onChange={(e) => setPlayer2Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center" />
+              </div>
+            </div>
+
+            <button onClick={recordMatch} className="w-full bg-emerald-600 text-white py-4 rounded-xl">Record Match</button>
+            <button onClick={() => setShowMatchModal(false)} className="w-full mt-3 text-gray-500">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* How to Use Modal */}
       {showHowToUse && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
@@ -321,12 +352,28 @@ export default function Ladder() {
                 <p>• You cannot play the same person more than once for ladder scoring</p>
               </div>
               <div>
-                <p className="font-semibold">Other:</p>
-                <p>• Click <strong>Refresh</strong> to manually update the ladder</p>
-                <p>• Click <strong>Profile</strong> to update your contact details</p>
+                <p className="font-semibold">Profile:</p>
+                <p>• Click <strong>"Profile"</strong> to update your name or contact details</p>
               </div>
             </div>
             <button onClick={() => setShowHowToUse(false)} className="mt-8 w-full bg-emerald-600 text-white py-3 rounded-xl font-medium">Close</button>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Modal */}
+      {showAdminModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
+            <h3 className="text-2xl font-bold text-red-600 mb-6">Admin Panel</h3>
+            <button onClick={resetAllData} className="w-full bg-red-600 text-white py-4 rounded-xl mb-6 font-medium">❌ Clear All Data (Reset Ladder)</button>
+            {players.map(p => (
+              <div key={p.email} className="flex justify-between py-3 border-b">
+                <span>{p.name}</span>
+                <button onClick={() => removePlayer(p.email)} className="text-red-500">Remove</button>
+              </div>
+            ))}
+            <button onClick={() => setShowAdminModal(false)} className="mt-6 w-full text-gray-500">Close</button>
           </div>
         </div>
       )}

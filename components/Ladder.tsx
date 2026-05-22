@@ -42,7 +42,14 @@ export default function Ladder() {
   const [editPhone, setEditPhone] = useState('');
   const [editWhatsapp, setEditWhatsapp] = useState('');
 
-  // Auto logout after 2 minutes
+  // Page protection
+  useEffect(() => {
+    if (!localStorage.getItem('isLoggedIn')) {
+      window.location.href = '/login';
+    }
+  }, []);
+
+  // Auto logout after 2 minutes inactivity
   useEffect(() => {
     let timeout: NodeJS.Timeout;
     const resetTimer = () => {
@@ -62,13 +69,6 @@ export default function Ladder() {
       clearTimeout(timeout);
       events.forEach(event => window.removeEventListener(event, resetTimer));
     };
-  }, []);
-
-  // Page protection
-  useEffect(() => {
-    if (!localStorage.getItem('isLoggedIn')) {
-      window.location.href = '/login';
-    }
   }, []);
 
   const loadData = async () => {
@@ -104,7 +104,7 @@ export default function Ladder() {
   };
 
   const openProfile = () => {
-    const userEmail = prompt("Enter your email to edit your profile:");
+    const userEmail = prompt("Enter your email to edit profile:");
     if (!userEmail) return;
     const user = players.find(p => p.email.toLowerCase() === userEmail.toLowerCase());
     if (user) {
@@ -114,7 +114,7 @@ export default function Ladder() {
       setEditWhatsapp(user.whatsapp || '');
       setShowProfileModal(true);
     } else {
-      alert("Email not found on the ladder.");
+      alert("Email not found.");
     }
   };
 

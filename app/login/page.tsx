@@ -66,17 +66,17 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-emerald-50 flex items-center justify-center p-4 sm:p-6">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl p-8 sm:p-10">
-        <div className="text-center mb-8">
+    <div className="min-h-screen bg-emerald-50 flex items-center justify-center p-4 sm:p-8">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 sm:p-10">
+        <div className="text-center mb-10">
           <h1 className="text-4xl sm:text-5xl font-bold text-emerald-800">Napton & Priors Marston</h1>
-          <p className="text-2xl sm:text-3xl text-emerald-700 mt-2">Singles Ladder (Mixed)</p>
-          <p className="text-gray-600 mt-4 text-base sm:text-lg">Register or log in below</p>
+          <p className="text-2xl sm:text-3xl text-emerald-700 mt-3">Singles Ladder (Mixed)</p>
+          <p className="text-gray-600 mt-6 text-base sm:text-lg">Register or log in below</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
             <input
               type="text"
               required
@@ -88,7 +88,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Email Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
             <input
               type="email"
               required
@@ -100,7 +100,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Phone Number (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number (optional)</label>
             <input
               type="tel"
               value={phone}
@@ -111,7 +111,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">WhatsApp Number (optional)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp Number (optional)</label>
             <input
               type="tel"
               value={whatsapp}
@@ -122,7 +122,7 @@ export default function Login() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Secret Code</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Secret Code</label>
             <input
               type="password"
               required
@@ -136,14 +136,14 @@ export default function Login() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-medium py-4 rounded-2xl text-lg transition mt-4"
+            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 text-white font-medium py-4 rounded-2xl text-lg mt-4 transition"
           >
             {loading ? "Processing..." : "Register / Log In"}
           </button>
         </form>
 
         {message && (
-          <p className="mt-6 text-center text-lg font-medium p-4 bg-emerald-50 rounded-2xl">
+          <p className="mt-6 text-center text-base sm:text-lg font-medium p-4 bg-emerald-50 rounded-2xl">
             {message}
           </p>
         )}

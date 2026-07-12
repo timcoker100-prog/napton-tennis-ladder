@@ -27,6 +27,7 @@ const {
   winnerScore,
   loserScore,
   action,
+  testEmail,
 } = body
 if (action === "weekly") {
   const { data: rankings, error } = await supabase
@@ -94,13 +95,13 @@ const pairingLines = (rankings ?? []).map((player) => {
     .filter((opponent) => opponent.id !== player.id)
     .filter((opponent) => !playedPairs.has([player.id, opponent.id].sort().join("|")))
     .sort((a, b) => Math.abs(a.points - player.points) - Math.abs(b.points - player.points))
-    .slice(0, 3)
+    .slice(0, 1)
     .map((opponent) => opponent.name)
 
   if (suggestions.length === 0) {
     return null
   }
-  return `${player.name} - suggested opponents you haven't played yet: ${suggestions.join(", ")}`
+  return `${player.name} - you haven't yet played ${suggestions[0]}. Why not contact them?`
 }).filter((line) => line !== null)
 
 const emailText = `
@@ -122,7 +123,7 @@ You are receiving this email because you joined the Napton and Priors tennis lad
 To stop receiving these emails, log into the ladder, go to Player Contacts and untick "Receive Weekly Ladder Reports".
 View the full ladder at https://www.naptontennisladder.co.uk
 `
- const recipientEmails = recipients.map(r => r.email)
+ const recipientEmails = testEmail ? [testEmail] : recipients.map(r => r.email)
 
 const resendResponse = await fetch("https://api.resend.com/emails", {
   method: "POST",

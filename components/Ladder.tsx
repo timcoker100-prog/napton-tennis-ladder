@@ -36,6 +36,13 @@ export default function Ladder() {
   const [player2, setPlayer2] = useState('');
   const [player1Games, setPlayer1Games] = useState(0);
   const [player2Games, setPlayer2Games] = useState(0);
+  const [isSubmittingMatch, setIsSubmittingMatch] = useState(false);
+
+  const [adminPlayer1, setAdminPlayer1] = useState('');
+  const [adminPlayer2, setAdminPlayer2] = useState('');
+  const [adminPlayer1Games, setAdminPlayer1Games] = useState(0);
+  const [adminPlayer2Games, setAdminPlayer2Games] = useState(0);
+  const [isSubmittingAdminMatch, setIsSubmittingAdminMatch] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<Player | null>(null);
   const [editName, setEditName] = useState('');
@@ -157,40 +164,65 @@ export default function Ladder() {
     loadData();
   };
 
-  const recordMatch = async () => {
-    if (!player1 || !player2 || player1 === player2) {
+  const submitMatch = async (
+    p1Name: string,
+    p2Name: string,
+    p1Games: number,
+    p2Games: number,
+    onDone: () => void
+  ) => {
+    if (!p1Name || !p2Name || p1Name === p2Name) {
       alert("Select two different players");
       return;
     }
-    if (hasPlayedBefore(player1, player2)) {
+    if (hasPlayedBefore(p1Name, p2Name)) {
       alert("❌ These two players have already played each other");
       return;
     }
-    if (player1Games + player2Games !== 15) {
+    if (p1Games + p2Games !== 15) {
       alert("Total games must be exactly 15");
       return;
     }
 
-    const p1 = players.find(p => p.name === player1);
-    const p2 = players.find(p => p.name === player2);
+    const p1 = players.find(p => p.name === p1Name);
+    const p2 = players.find(p => p.name === p2Name);
     if (!p1 || !p2) return;
 
     await supabase.from('matches').insert({
-      winner_name: player1Games > player2Games ? p1.name : p2.name,
-      loser_name: player1Games > player2Games ? p2.name : p1.name,
-      winner_games: Math.max(player1Games, player2Games),
-      loser_games: Math.min(player1Games, player2Games),
+      winner_name: p1Games > p2Games ? p1.name : p2.name,
+      loser_name: p1Games > p2Games ? p2.name : p1.name,
+      winner_games: Math.max(p1Games, p2Games),
+      loser_games: Math.min(p1Games, p2Games),
       date: new Date().toISOString().split('T')[0]
     });
 
-    await supabase.from('players').update({ points: p1.points + player1Games }).eq('id', p1.id);
-    await supabase.from('players').update({ points: p2.points + player2Games }).eq('id', p2.id);
+    await supabase.from('players').update({ points: p1.points + p1Games }).eq('id', p1.id);
+    await supabase.from('players').update({ points: p2.points + p2Games }).eq('id', p2.id);
 
-    alert("✅ Match recorded and points updated!");
-    setShowMatchModal(false);
-    setPlayer1(''); setPlayer2('');
-    setPlayer1Games(0); setPlayer2Games(0);
+    alert("✅ Score submitted successfully!");
+    onDone();
     loadData();
+  };
+
+  const recordMatch = async () => {
+    if (isSubmittingMatch) return;
+    setIsSubmittingMatch(true);
+    await submitMatch(player1, player2, player1Games, player2Games, () => {
+      setShowMatchModal(false);
+      setPlayer1(''); setPlayer2('');
+      setPlayer1Games(0); setPlayer2Games(0);
+    });
+    setIsSubmittingMatch(false);
+  };
+
+  const recordAdminMatch = async () => {
+    if (isSubmittingAdminMatch) return;
+    setIsSubmittingAdminMatch(true);
+    await submitMatch(adminPlayer1, adminPlayer2, adminPlayer1Games, adminPlayer2Games, () => {
+      setAdminPlayer1(''); setAdminPlayer2('');
+      setAdminPlayer1Games(0); setAdminPlayer2Games(0);
+    });
+    setIsSubmittingAdminMatch(false);
   };
 
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
@@ -327,7 +359,7 @@ export default function Ladder() {
               </div>
             </div>
 
-            <button onClick={recordMatch} className="w-full bg-emerald-600 text-white py-4 rounded-xl">Record Match</button>
+            <button onClick={recordMatch} disabled={isSubmittingMatch} className="w-full bg-emerald-600 text-white py-4 rounded-xl disabled:opacity-50">{isSubmittingMatch ? 'Submitting...' : 'Record Match'}</button>
             <button onClick={() => setShowMatchModal(false)} className="w-full mt-3 text-gray-500">Cancel</button>
           </div>
         </div>
@@ -366,6 +398,36 @@ export default function Ladder() {
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-8 max-w-lg w-full">
             <h3 className="text-2xl font-bold text-red-600 mb-6">Admin Panel</h3>
+
+            <div className="mb-6 border rounded-xl p-4">
+              <h4 className="font-semibold mb-3">Add Score (Any Two Players)</h4>
+              <div className="mb-3">
+                <label className="block text-sm mb-1">Player 1</label>
+                <select value={adminPlayer1} onChange={(e) => setAdminPlayer1(e.target.value)} className="w-full border rounded-xl px-4 py-3">
+                  <option value="">Select Player 1</option>
+                  {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="mb-3">
+                <label className="block text-sm mb-1">Player 2</label>
+                <select value={adminPlayer2} onChange={(e) => setAdminPlayer2(e.target.value)} className="w-full border rounded-xl px-4 py-3">
+                  <option value="">Select Player 2</option>
+                  {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <p className="text-sm mb-1">{adminPlayer1 || "Player 1"} Games Won</p>
+                  <input type="number" min="0" max="15" value={adminPlayer1Games} onChange={(e) => setAdminPlayer1Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center" />
+                </div>
+                <div>
+                  <p className="text-sm mb-1">{adminPlayer2 || "Player 2"} Games Won</p>
+                  <input type="number" min="0" max="15" value={adminPlayer2Games} onChange={(e) => setAdminPlayer2Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center" />
+                </div>
+              </div>
+              <button onClick={recordAdminMatch} disabled={isSubmittingAdminMatch} className="w-full bg-emerald-600 text-white py-3 rounded-xl disabled:opacity-50">{isSubmittingAdminMatch ? 'Submitting...' : 'Add Score'}</button>
+            </div>
+
             <button onClick={resetAllData} className="w-full bg-red-600 text-white py-4 rounded-xl mb-6 font-medium">❌ Clear All Data (Reset Ladder)</button>
             {players.map(p => (
               <div key={p.email} className="flex justify-between py-3 border-b">

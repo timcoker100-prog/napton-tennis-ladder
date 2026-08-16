@@ -13,12 +13,12 @@ interface Player {
 }
 
 interface Match {
-  id: string;
-  winner_name: string;
-  loser_name: string;
-  winner_games: number;
-  loser_games: number;
-  date: string;
+  id: number;
+  player_a: string;
+  player_b: string;
+  player_a_games: number;
+  player_b_games: number;
+  created_at: string;
 }
 
 const ADMIN_CODE = 'ADMIN2026';
@@ -86,9 +86,9 @@ export default function Ladder() {
 
     setPlayers(pData || []);
 
-    const currentNames = new Set((pData || []).map(p => p.name));
-    const validMatches = (mData || []).filter(m => 
-      currentNames.has(m.winner_name) && currentNames.has(m.loser_name)
+    const currentIds = new Set((pData || []).map(p => p.id));
+    const validMatches = (mData || []).filter(m =>
+      currentIds.has(m.player_a) && currentIds.has(m.player_b)
     );
     setMatches(validMatches);
   };
@@ -99,10 +99,10 @@ export default function Ladder() {
     return () => clearInterval(interval);
   }, []);
 
-  const hasPlayedBefore = (p1: string, p2: string) => {
-    return matches.some(m => 
-      (m.winner_name === p1 && m.loser_name === p2) || 
-      (m.winner_name === p2 && m.loser_name === p1)
+  const hasPlayedBefore = (p1Id: string, p2Id: string) => {
+    return matches.some(m =>
+      (m.player_a === p1Id && m.player_b === p2Id) ||
+      (m.player_a === p2Id && m.player_b === p1Id)
     );
   };
 
@@ -148,7 +148,7 @@ export default function Ladder() {
 
   const resetAllData = async () => {
     if (!confirm("⚠️ Delete ALL players and ALL matches?\n\nThis cannot be undone!")) return;
-    await supabase.from('matches').delete().gte('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('matches').delete().gte('id', 0);
     await supabase.from('players').delete().gte('id', '00000000-0000-0000-0000-000000000000');
     setPlayers([]);
     setMatches([]);
@@ -160,24 +160,24 @@ export default function Ladder() {
     if (!confirm("Remove this player and all their matches?")) return;
     const player = players.find(p => p.email === email);
     if (player) {
-      await supabase.from('matches').delete().or(`winner_name.eq.${player.name},loser_name.eq.${player.name}`);
+      await supabase.from('matches').delete().or(`player_a.eq.${player.id},player_b.eq.${player.id}`);
     }
     await supabase.from('players').delete().eq('email', email);
     loadData();
   };
 
   const submitMatch = async (
-    p1Name: string,
-    p2Name: string,
+    p1Id: string,
+    p2Id: string,
     p1Games: number,
     p2Games: number,
     onDone: () => void
   ) => {
-    if (!p1Name || !p2Name || p1Name === p2Name) {
+    if (!p1Id || !p2Id || p1Id === p2Id) {
       alert("Select two different players");
       return;
     }
-    if (hasPlayedBefore(p1Name, p2Name)) {
+    if (hasPlayedBefore(p1Id, p2Id)) {
       alert("❌ These two players have already played each other");
       return;
     }
@@ -186,16 +186,17 @@ export default function Ladder() {
       return;
     }
 
-    const p1 = players.find(p => p.name === p1Name);
-    const p2 = players.find(p => p.name === p2Name);
+    const p1 = players.find(p => p.id === p1Id);
+    const p2 = players.find(p => p.id === p2Id);
     if (!p1 || !p2) return;
 
     const { error: insertError } = await supabase.from('matches').insert({
-      winner_name: p1Games > p2Games ? p1.name : p2.name,
-      loser_name: p1Games > p2Games ? p2.name : p1.name,
-      winner_games: Math.max(p1Games, p2Games),
-      loser_games: Math.min(p1Games, p2Games),
-      date: new Date().toISOString().split('T')[0]
+      player_a: p1.id,
+      player_b: p2.id,
+      player_a_games: p1Games,
+      player_b_games: p2Games,
+      status: 'confirmed',
+      created_at: new Date().toISOString()
     });
 
     if (insertError) {
@@ -309,17 +310,26 @@ export default function Ladder() {
             {matches.length === 0 ? (
               <p className="text-gray-500 text-center py-8">No matches yet</p>
             ) : (
-              matches.slice(-10).reverse().map((m, i) => (
-                <div key={i} className="flex justify-between items-center bg-gray-50 p-4 rounded-xl">
-                  <div>
-                    <span className="font-medium text-emerald-700">{m.winner_name}</span> beat <span className="font-medium">{m.loser_name}</span>
+              matches.slice(-10).reverse().map((m) => {
+                const aName = players.find(p => p.id === m.player_a)?.name || 'Unknown';
+                const bName = players.find(p => p.id === m.player_b)?.name || 'Unknown';
+                const aWon = m.player_a_games > m.player_b_games;
+                const winnerName = aWon ? aName : bName;
+                const loserName = aWon ? bName : aName;
+                const winnerGames = aWon ? m.player_a_games : m.player_b_games;
+                const loserGames = aWon ? m.player_b_games : m.player_a_games;
+                return (
+                  <div key={m.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-xl">
+                    <div>
+                      <span className="font-medium text-emerald-700">{winnerName}</span> beat <span className="font-medium">{loserName}</span>
+                    </div>
+                    <div className="font-semibold">
+                      {winnerGames} - {loserGames}
+                    </div>
+                    <div className="text-sm text-gray-500">{new Date(m.created_at).toLocaleDateString()}</div>
                   </div>
-                  <div className="font-semibold">
-                    {m.winner_games} - {m.loser_games}
-                  </div>
-                  <div className="text-sm text-gray-500">{m.date}</div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -359,24 +369,24 @@ export default function Ladder() {
               <label className="block text-sm mb-1">Player 1</label>
               <select value={player1} onChange={(e) => setPlayer1(e.target.value)} className="w-full border rounded-xl px-4 py-3">
                 <option value="">Select Player 1</option>
-                {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
             <div className="mb-6">
               <label className="block text-sm mb-1">Player 2</label>
               <select value={player2} onChange={(e) => setPlayer2(e.target.value)} className="w-full border rounded-xl px-4 py-3">
                 <option value="">Select Player 2</option>
-                {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div>
-                <p className="text-sm mb-1">{player1 || "Player 1"} Games Won</p>
+                <p className="text-sm mb-1">{players.find(p => p.id === player1)?.name || "Player 1"} Games Won</p>
                 <input type="number" min="0" max="15" value={player1Games} onChange={(e) => setPlayer1Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center" />
               </div>
               <div>
-                <p className="text-sm mb-1">{player2 || "Player 2"} Games Won</p>
+                <p className="text-sm mb-1">{players.find(p => p.id === player2)?.name || "Player 2"} Games Won</p>
                 <input type="number" min="0" max="15" value={player2Games} onChange={(e) => setPlayer2Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center" />
               </div>
             </div>
@@ -427,23 +437,23 @@ export default function Ladder() {
                 <label className="block text-sm mb-1">Player 1</label>
                 <select value={adminPlayer1} onChange={(e) => setAdminPlayer1(e.target.value)} className="w-full border rounded-xl px-4 py-3">
                   <option value="">Select Player 1</option>
-                  {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
               <div className="mb-3">
                 <label className="block text-sm mb-1">Player 2</label>
                 <select value={adminPlayer2} onChange={(e) => setAdminPlayer2(e.target.value)} className="w-full border rounded-xl px-4 py-3">
                   <option value="">Select Player 2</option>
-                  {players.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <p className="text-sm mb-1">{adminPlayer1 || "Player 1"} Games Won</p>
+                  <p className="text-sm mb-1">{players.find(p => p.id === adminPlayer1)?.name || "Player 1"} Games Won</p>
                   <input type="number" min="0" max="15" value={adminPlayer1Games} onChange={(e) => setAdminPlayer1Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center" />
                 </div>
                 <div>
-                  <p className="text-sm mb-1">{adminPlayer2 || "Player 2"} Games Won</p>
+                  <p className="text-sm mb-1">{players.find(p => p.id === adminPlayer2)?.name || "Player 2"} Games Won</p>
                   <input type="number" min="0" max="15" value={adminPlayer2Games} onChange={(e) => setAdminPlayer2Games(Number(e.target.value))} className="w-full border rounded-xl px-4 py-3 text-center" />
                 </div>
               </div>

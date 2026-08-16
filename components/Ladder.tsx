@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface Player {
@@ -37,12 +37,14 @@ export default function Ladder() {
   const [player1Games, setPlayer1Games] = useState(0);
   const [player2Games, setPlayer2Games] = useState(0);
   const [isSubmittingMatch, setIsSubmittingMatch] = useState(false);
+  const isSubmittingMatchRef = useRef(false);
 
   const [adminPlayer1, setAdminPlayer1] = useState('');
   const [adminPlayer2, setAdminPlayer2] = useState('');
   const [adminPlayer1Games, setAdminPlayer1Games] = useState(0);
   const [adminPlayer2Games, setAdminPlayer2Games] = useState(0);
   const [isSubmittingAdminMatch, setIsSubmittingAdminMatch] = useState(false);
+  const isSubmittingAdminMatchRef = useRef(false);
 
   const [currentUser, setCurrentUser] = useState<Player | null>(null);
   const [editName, setEditName] = useState('');
@@ -188,13 +190,23 @@ export default function Ladder() {
     const p2 = players.find(p => p.name === p2Name);
     if (!p1 || !p2) return;
 
-    await supabase.from('matches').insert({
+    const { error: insertError } = await supabase.from('matches').insert({
       winner_name: p1Games > p2Games ? p1.name : p2.name,
       loser_name: p1Games > p2Games ? p2.name : p1.name,
       winner_games: Math.max(p1Games, p2Games),
       loser_games: Math.min(p1Games, p2Games),
       date: new Date().toISOString().split('T')[0]
     });
+
+    if (insertError) {
+      if (insertError.code === '23505') {
+        alert("❌ These two players have already had a result recorded today");
+      } else {
+        alert("❌ Failed to submit score, please try again");
+      }
+      loadData();
+      return;
+    }
 
     await supabase.from('players').update({ points: p1.points + p1Games }).eq('id', p1.id);
     await supabase.from('players').update({ points: p2.points + p2Games }).eq('id', p2.id);
@@ -205,24 +217,34 @@ export default function Ladder() {
   };
 
   const recordMatch = async () => {
-    if (isSubmittingMatch) return;
+    if (isSubmittingMatchRef.current) return;
+    isSubmittingMatchRef.current = true;
     setIsSubmittingMatch(true);
-    await submitMatch(player1, player2, player1Games, player2Games, () => {
-      setShowMatchModal(false);
-      setPlayer1(''); setPlayer2('');
-      setPlayer1Games(0); setPlayer2Games(0);
-    });
-    setIsSubmittingMatch(false);
+    try {
+      await submitMatch(player1, player2, player1Games, player2Games, () => {
+        setShowMatchModal(false);
+        setPlayer1(''); setPlayer2('');
+        setPlayer1Games(0); setPlayer2Games(0);
+      });
+    } finally {
+      isSubmittingMatchRef.current = false;
+      setIsSubmittingMatch(false);
+    }
   };
 
   const recordAdminMatch = async () => {
-    if (isSubmittingAdminMatch) return;
+    if (isSubmittingAdminMatchRef.current) return;
+    isSubmittingAdminMatchRef.current = true;
     setIsSubmittingAdminMatch(true);
-    await submitMatch(adminPlayer1, adminPlayer2, adminPlayer1Games, adminPlayer2Games, () => {
-      setAdminPlayer1(''); setAdminPlayer2('');
-      setAdminPlayer1Games(0); setAdminPlayer2Games(0);
-    });
-    setIsSubmittingAdminMatch(false);
+    try {
+      await submitMatch(adminPlayer1, adminPlayer2, adminPlayer1Games, adminPlayer2Games, () => {
+        setAdminPlayer1(''); setAdminPlayer2('');
+        setAdminPlayer1Games(0); setAdminPlayer2Games(0);
+      });
+    } finally {
+      isSubmittingAdminMatchRef.current = false;
+      setIsSubmittingAdminMatch(false);
+    }
   };
 
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
